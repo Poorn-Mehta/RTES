@@ -5,6 +5,20 @@
 *		Last Modified: 6/13/2019
 */
 
+/*
+*	This code has been completely written by me, however - with the help of following resources
+*
+*	>> Exmaples and codes provided by Professor Sam Siewert 
+*	(1) http://ecee.colorado.edu/~ecen5623/ecen/ex/Linux/simplethread/
+*	(2) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/incdecthread/pthread.c
+*	(3) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/example-3/testdigest.c
+*	(4) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/code/VxWorks-sequencers/
+*
+*	>> External resources
+*	(5) http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
+*	(6) Linux man pages
+*/
+
 #include "main.h"
 
 // To record start time
