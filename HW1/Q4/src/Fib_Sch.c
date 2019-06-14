@@ -14,34 +14,41 @@ extern uint8_t Terminate_Flag;
 // Function to implement scheduling thread
 void *Fib_Scheduler(void *threadp)
 {
-	uint8_t i, j;
+	uint8_t j;
 	// How many LCM periods - to run for
 	for(j = 0; j < No_of_LCM; j ++)
 	{
 		// Implementing RM policy with the use of microsleep and semaphores
-		for(i = 0; i < 2; i ++)
-		{
-			// Run Thread Fib10
-			sem_post(&Fib10_Sem);
-			syslog (LOG_INFO, "<%.3fms>Sem Released: Fib10", Time_Stamp());
-			usleep(10000);
-
-			// Run Thread Fib20
-			sem_post(&Fib20_Sem);
-			syslog (LOG_INFO, "<%.3fms>Sem Released: Fib20", Time_Stamp());
-			usleep(10000);
-
-			// Interrupt Thread Fib20 
-			sem_post(&Fib10_Sem);
-			syslog (LOG_INFO, "<%.3fms>Sem Released: Fib10", Time_Stamp());
-			usleep(20000);
-		}
-
-		// Final Fib10 run
+		// Requestig both at the same time, Critical Instant
 		sem_post(&Fib10_Sem);
 		syslog (LOG_INFO, "<%.3fms>Sem Released: Fib10", Time_Stamp());
+		sem_post(&Fib20_Sem);
+		syslog (LOG_INFO, "<%.3fms>Sem Released: Fib20", Time_Stamp());
+		usleep(20000);
+		
+		// Period of Fib10 has arrived, request again
+		sem_post(&Fib10_Sem);
+		syslog (LOG_INFO, "<%.3fms>Sem Released: Fib10", Time_Stamp());
+		usleep(20000);
 
-		// Idle for last 10ms
+		// Fib20 has just completed processing. Period of Fib10 has reached, request again. 
+		sem_post(&Fib10_Sem);
+		syslog (LOG_INFO, "<%.3fms>Sem Released: Fib10", Time_Stamp());
+		usleep(10000);
+
+		// Period of Fib20 has arrived, request again
+		sem_post(&Fib20_Sem);
+		syslog (LOG_INFO, "<%.3fms>Sem Released: Fib20", Time_Stamp());
+		usleep(10000);
+
+		// Periodic request for Fib10
+		sem_post(&Fib10_Sem);
+		syslog (LOG_INFO, "<%.3fms>Sem Released: Fib10", Time_Stamp());
+		usleep(20000);
+
+		// Final request for Fib10. Fib20 has been completed 2 times now. 
+		sem_post(&Fib10_Sem);
+		syslog (LOG_INFO, "<%.3fms>Sem Released: Fib10", Time_Stamp());
 		usleep(20000);
 	}
 

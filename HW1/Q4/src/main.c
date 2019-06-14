@@ -50,12 +50,14 @@ cpu_set_t CPU_Core;
 
 
 int main (int argc, char *argv[])
-{
+{	
 	// Record program start time, to provide relative time throughout the execution
 	clock_gettime(CLOCK_REALTIME, &start_time);
 
 	// Setup logger
-	Set_Logger("HW1_Q4_Log", LOG_DEBUG);
+	Set_Logger("HW1_Q4_Logger", LOG_DEBUG);
+
+	syslog (LOG_INFO, ">>>>>>>>>> Program Start <<<<<<<<<<");
 
 	// Setup the system for realtime execution, use CPU3
 	if(Realtime_Setup(3) != 0)	exit(-1);
