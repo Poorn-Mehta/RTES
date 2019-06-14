@@ -1,3 +1,10 @@
+/*
+*		File: main.h
+*		Purpose: The header file containing useful libraries, defines, and function prototypes
+*		Owner: Poorn Mehta
+*		Last Modified: 6/13/2019
+*/
+
 #ifndef	__MAIN_H__
 #define __MAIN_H__
 
@@ -16,6 +23,7 @@
 #include <string.h>
 
 #define No_of_Cores	4
+#define No_of_LCM	1
 
 float Time_Stamp(void);
 void Set_Logger(char *logname, int level_upto);
