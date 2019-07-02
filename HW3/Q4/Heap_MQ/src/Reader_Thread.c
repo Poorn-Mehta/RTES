@@ -46,7 +46,7 @@ void *Reader_Func(void *threadp)
 
         if(q_recv_resp < 0)
         {
-            syslog(LOG_ERR, "\nQueue receiving error for Reader");
+            syslog(LOG_ERR, "Queue receiving error for Reader");
             perror("\nQueue Receiving Failed");
             pthread_exit(0);
         }
@@ -54,9 +54,9 @@ void *Reader_Func(void *threadp)
         memcpy(&buffptr, buffer, sizeof(void *));
         memcpy((void *)&id, &(buffer[sizeof(void *)]), sizeof(int));
 
-        syslog (LOG_INFO, "Receive: ptr msg 0x%X received with priority = %d, length = %d, id = %d\n", buffptr, prio, q_recv_resp, id);
+        syslog (LOG_INFO, "Receive: ptr msg 0x%X received with priority = %d, length = %d, id = %d", buffptr, prio, q_recv_resp, id);
 
-        syslog (LOG_INFO, "Contents of ptr = \n%s\n", (char *)buffptr);
+        syslog (LOG_INFO, "Contents of ptr = %s", (char *)buffptr);
 
         free(buffptr);
 

@@ -21,19 +21,19 @@ void *Writer_Func(void *threadp)
     uint16_t i, j;
     char pixel = 'A';
 
-    for(i = 0; i < (0x0001 << 12); i += (0x0001 << 6))
+    for(i = 0; i < 4096; i += 64)
     {
         pixel = 'A';
         for(j = i; j < (i + 64); j ++)
         {
             imagebuff[j] = (char)pixel++;
         }
-        imagebuff[j-1] = '\n';
+//        imagebuff[j-1] = '\n';
     }
     imagebuff[4095] = '\0';
     imagebuff[63] = '\0';
 
-    syslog(LOG_INFO, "Wrote Image Buffer: \n%s", &imagebuff[0]);
+    syslog(LOG_INFO, "Wrote Image Buffer: %s", &imagebuff[0]);
 
     char buffer[queue_len_bytes];
     void *buffptr;
@@ -67,9 +67,9 @@ void *Writer_Func(void *threadp)
 
         buffptr = (void *)malloc(sizeof(imagebuff));
         strcpy(buffptr, &imagebuff[0]);
-        syslog (LOG_INFO, "Message to send = %s\n", (char *)buffptr);
+        syslog (LOG_INFO, "Message to send = %s", (char *)buffptr);
 
-        syslog (LOG_INFO, "Sending %ld bytes\n", sizeof(buffptr));
+        syslog (LOG_INFO, "Sending %ld bytes", sizeof(buffptr));
 
         memcpy(buffer, &buffptr, sizeof(void *));
         memcpy(&(buffer[sizeof(void *)]), (void *)&id, sizeof(int));
@@ -78,7 +78,7 @@ void *Writer_Func(void *threadp)
 
         if(q_send_resp < 0)
         {
-            syslog(LOG_ERR, "\nQueue sending error for Writer");
+            syslog(LOG_ERR, "nQueue sending error for Writer");
             perror("\nQueue Sending Failed");
             pthread_exit(0);
         }

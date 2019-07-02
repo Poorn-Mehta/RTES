@@ -51,7 +51,7 @@ void *Reader_Func(void *threadp)
 
         buffer[q_recv_resp] = '\0';
 
-        syslog (LOG_INFO, "Receive: msg %s received with priority = %d, length = %d\n", &buffer[0], prio, q_recv_resp);
+        syslog (LOG_INFO, "Receive: msg %s received with priority = %d, length = %d", &buffer[0], prio, q_recv_resp);
 
 		syslog (LOG_INFO, "<%.3fus>Reader Completed - Core(%d)", Time_Stamp(), sched_getcpu());
 
