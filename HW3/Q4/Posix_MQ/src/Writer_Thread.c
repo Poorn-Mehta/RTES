@@ -1,8 +1,8 @@
 /*
-*		File: Fib10.c
-*		Purpose: The source file containing implementation of RM thread Fib10 - with overall Third Highest Priority, and 20ms of CPU Capacity
+*		File: Writer_Thread.c
+*		Purpose: The source file containing implementation of writer thread for demonstrating IPC Posix Queues
 *		Owner: Poorn Mehta
-*		Last Modified: 6/13/2019
+*		Last Modified: 7/5/2019
 */
 
 #include "main.h"
@@ -13,7 +13,7 @@
 
 //extern uint8_t queue_len_bytes;
 
-// Following function implements Fib10 Thread
+// Following function implements Writer Thread
 void *Writer_Func(void *threadp)
 {
 
@@ -26,8 +26,10 @@ void *Writer_Func(void *threadp)
 	custom_queue_attr.mq_maxmsg = queue_size;
 	custom_queue_attr.mq_msgsize = MAX_MSG_SIZE;
 
+	// Unlinking just for safety/cleanup from previous code
 	mq_unlink(queue_name);
 
+	// Open queue with write only access
 	custom_queue = mq_open(queue_name, O_CREAT | O_WRONLY | O_CLOEXEC, 0666, &custom_queue_attr);
 	if(custom_queue == -1)
 	{
@@ -44,18 +46,21 @@ void *Writer_Func(void *threadp)
 
 		syslog (LOG_INFO, "<%.3fus>Writer Started - Core(%d)", Time_Stamp(), sched_getcpu());
 
-        syslog (LOG_INFO, "Message to send = %s\n", (char *)&canned_msg[0]);
+		// Print out the message which is going be sent through queue
+		syslog (LOG_INFO, "Message to send = %s\n", (char *)&canned_msg[0]);
 
-        syslog (LOG_INFO, "Sending %ld bytes\n", sizeof(canned_msg));
+		syslog (LOG_INFO, "Sending %ld bytes\n", sizeof(canned_msg));
 
+		// Send the whole message through the POSIX Queue
 		q_send_resp = mq_send(custom_queue, canned_msg, sizeof(canned_msg), prio);
 
-        if(q_send_resp < 0)
-        {
-            syslog(LOG_ERR, "\nQueue sending error for Writer");
-            perror("\nQueue Sending Failed");
-            pthread_exit(0);
-        }
+		// Error Handling
+		if(q_send_resp < 0)
+		{
+		    syslog(LOG_ERR, "\nQueue sending error for Writer");
+		    perror("\nQueue Sending Failed");
+		    pthread_exit(0);
+		}
 
 		syslog (LOG_INFO, "<%.3fus>Writer Completed - Core(%d)", Time_Stamp(), sched_getcpu());
 
@@ -65,7 +70,7 @@ void *Writer_Func(void *threadp)
 	}
 
 	// Exit and log the termination event
-	syslog(LOG_INFO, "<%.3fus>Writer Exiting...", Time_Stamp());
-    mq_close(custom_queue);
+	syslog(LOG_INFO, "<%.3fus>Writer Exiting...", Time_Stamp());	
+	mq_close(custom_queue);
 	pthread_exit(0);
 }

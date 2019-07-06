@@ -1,22 +1,10 @@
 /*
 *		File: main.c
-*		Purpose: The source file containing main() and global variables for Question 4 of Homework 1
+*		Purpose: The source file containing main() and global variables for Question 4 of Homework 3
 *		Owner: Poorn Mehta
-*		Last Modified: 6/13/2019
-*/
-
-/*
-*	This code has been completely written by me, however - with the help of following resources
-*
-*	>> Exmaples and codes provided by Professor Sam Siewert
-*	(1) http://ecee.colorado.edu/~ecen5623/ecen/ex/Linux/simplethread/
-*	(2) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/incdecthread/pthread.c
-*	(3) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/example-3/testdigest.c
-*	(4) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/code/VxWorks-sequencers/
-*
-*	>> External resources
-*	(5) http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
-*	(6) Linux man pages
+*		Last Modified: 7/5/2019
+*		This code is converted to Linux platform, from VxWorks source (http://ecee.colorado.edu/~ecen5623/ecen/ex/Linux/code/VxWorks-Examples/heap_mq.c)
+*  		Linux Man pages has been referred whenever necessary. Also, I have referred to my own previous work (https://github.com/Poorn-Mehta/AESD) at some points.
 */
 
 #include "main.h"
@@ -24,8 +12,6 @@
 #include <mqueue.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-
-//uint8_t queue_len_bytes = (size_t)(sizeof(void *)+sizeof(int));
 
 // To record start time
 struct timespec start_time = {0, 0};
@@ -61,6 +47,7 @@ int main (int argc, char *argv[])
 	// Setup logger
 	Set_Logger("HW3_Q4_P1", LOG_DEBUG);
 
+	// Setting up random number generator
 	srand(time(0));
 
 	syslog (LOG_INFO, ">>>>>>>>>> Program Start <<<<<<<<<<");
@@ -68,7 +55,7 @@ int main (int argc, char *argv[])
 	// Setup the system for realtime execution, use CPU3
 	if(Realtime_Setup(3) != 0)	exit(-1);
 
-	// Give second highest priority to the Fib10 thread, and create it
+	// Give second highest priority to the Writer thread, and create it
 	Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
 	pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
 	pthread_create(&Writer_Thread, &Attr_All, Writer_Func, (void *)0);
@@ -76,7 +63,7 @@ int main (int argc, char *argv[])
 
 
 
-	// Give third highest priority to the Fib20 thread, and create it
+	// Give third highest priority to the Reader thread, and create it
 	Attr_Sch.sched_priority = FIFO_Max_Prio - 2;
 	pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
 	pthread_create(&Reader_Thread, &Attr_All, Reader_Func, (void *)0);

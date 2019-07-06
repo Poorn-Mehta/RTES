@@ -1,22 +1,9 @@
 /*
 *		File: main.c
-*		Purpose: The source file containing main() and global variables for Question 4 of Homework 1
+*		Purpose: The source file containing main() and global variables for Question 5 of Homework 3
 *		Owner: Poorn Mehta
-*		Last Modified: 6/13/2019
-*/
-
-/*
-*	This code has been completely written by me, however - with the help of following resources
-*
-*	>> Exmaples and codes provided by Professor Sam Siewert
-*	(1) http://ecee.colorado.edu/~ecen5623/ecen/ex/Linux/simplethread/
-*	(2) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/incdecthread/pthread.c
-*	(3) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/example-3/testdigest.c
-*	(4) http://ecee.colorado.edu/%7Eecen5623/ecen/ex/Linux/code/VxWorks-sequencers/
-*
-*	>> External resources
-*	(5) http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
-*	(6) Linux man pages
+*		Last Modified: 7/5/2019
+*		Linux Man pages has been referred whenever necessary. Also, I have referred to my own previous work (https://github.com/Poorn-Mehta/AESD) at some points.
 */
 
 #include "main.h"
@@ -61,25 +48,26 @@ int main (int argc, char *argv[])
 	// Setup logger
 	Set_Logger("HW3_Q5", LOG_DEBUG);
 
+	// Setup random number generator
 	srand(time(0));
 
 	syslog (LOG_INFO, ">>>>>>>>>> Program Start <<<<<<<<<<");
 
+	// Initialize mutex
 	if(pthread_mutex_init(&Mutex_Locker, (void *)0))
 	{
-        syslog(LOG_ERR, "Failed to Initialize Mutex");
+        	syslog(LOG_ERR, "Failed to Initialize Mutex");
 		return 1;
 	}
 
-	srand(time(0));
-
-    Shared_Info.accel_x = 0;
-    Shared_Info.accel_y = 0;
-    Shared_Info.accel_z = 0;
-    Shared_Info.roll = 0;
-    Shared_Info.pitch = 0;
-    Shared_Info.yaw = 0;
-    clock_gettime(CLOCK_REALTIME, &Shared_Info.timestamp_local);
+	// Initialize shared global data structure
+	Shared_Info.accel_x = 0;
+	Shared_Info.accel_y = 0;
+	Shared_Info.accel_z = 0;
+	Shared_Info.roll = 0;
+	Shared_Info.pitch = 0;
+	Shared_Info.yaw = 0;
+	clock_gettime(CLOCK_REALTIME, &Shared_Info.timestamp_local);
 
 	// Setup the system for realtime execution, use CPU3
 //	if(Realtime_Setup(3) != 0)	exit(-1);

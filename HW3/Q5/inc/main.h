@@ -1,8 +1,8 @@
 /*
 *		File: main.h
-*		Purpose: The header file containing useful libraries, defines, and function prototypes
+*		Purpose: The header file containing useful libraries, global defines, and function prototypes
 *		Owner: Poorn Mehta
-*		Last Modified: 6/13/2019
+*		Last Modified: 7/5/2019
 */
 
 #ifndef	__MAIN_H__
