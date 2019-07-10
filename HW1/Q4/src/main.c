@@ -57,6 +57,9 @@ int main (int argc, char *argv[])
 	// Setup logger
 	Set_Logger("HW1_Q4_Logger", LOG_DEBUG);
 
+	printf("\nThis Program uses Syslog instead of printf\n");
+	printf("\nExecute following to see the output:\n\ncd /var/log && grep HW1_Q4_Logger syslog\n");
+
 	syslog (LOG_INFO, ">>>>>>>>>> Program Start <<<<<<<<<<");
 
 	// Setup the system for realtime execution, use CPU3
