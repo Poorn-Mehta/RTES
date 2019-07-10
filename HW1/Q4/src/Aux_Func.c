@@ -74,8 +74,8 @@ uint8_t Realtime_Setup(uint8_t Bind_to_CPU)
 		// First, clearing variable
 		CPU_ZERO(&CPU_Core);
 
-		// Adding core-3 in the variable
-		CPU_SET(3, &CPU_Core);
+		// Adding core-<Bind_to_CPU> in the variable
+		CPU_SET(Bind_to_CPU, &CPU_Core);
 
 		// Executing API to set the CPU
 		if(pthread_attr_setaffinity_np(&Attr_All, sizeof(cpu_set_t), &CPU_Core) != 0)
