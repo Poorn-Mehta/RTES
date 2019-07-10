@@ -63,6 +63,9 @@ int main (int argc, char *argv[])
 
 	pthread_key_create(&glob_var_key,NULL);
 
+	printf("\nThis Program uses Syslog instead of printf\n");
+	printf("\nExecute following to see the output:\n\ncd /var/log && grep HW3_Q1_M2 syslog\n");
+
 	syslog (LOG_INFO, ">>>>>>>>>> Program Start <<<<<<<<<<");
 
 	// Setup the system for realtime execution, use CPU3

@@ -51,6 +51,9 @@ int main (int argc, char *argv[])
 	// Setup random number generator
 	srand(time(0));
 
+	printf("\nThis Program uses Syslog instead of printf\n");
+	printf("\nExecute following to see the output:\n\ncd /var/log && grep HW3_Q5 syslog\n");
+
 	syslog (LOG_INFO, ">>>>>>>>>> Program Start <<<<<<<<<<");
 
 	// Initialize mutex
