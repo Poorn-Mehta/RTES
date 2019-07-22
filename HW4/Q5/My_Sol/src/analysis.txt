@@ -1,0 +1,101 @@
+This Program uses Syslog instead of printf
+
+Execute following to see the output:
+
+cd /var/log && grep HW4_Q5_1 syslog
+
+*** Started on Resolution: 960*720 ***FORCING FORMAT
+
+Grey_Avg_fps: 15.568
+Grey_Avg_ET: 12978.581055us
+Grey_WCET: 1558004.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 15.063
+Bright_Avg_ET: 18274.845703us
+Bright_WCET: 1253712.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 14.865
+Contrast_Avg_ET: 38185.750000us
+Contrast_WCET: 1295936.000000us
+
+
+*** Ended on Resolution: 960*720 ***
+
+*** Started on Resolution: 800*600 ***FORCING FORMAT
+
+Grey_Avg_fps: 15.017
+Grey_Avg_ET: 6232.887207us
+Grey_WCET: 103648.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 15.006
+Bright_Avg_ET: 11372.083984us
+Bright_WCET: 102880.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 14.981
+Contrast_Avg_ET: 23666.414062us
+Contrast_WCET: 49696.000000us
+
+
+*** Ended on Resolution: 800*600 ***
+
+*** Started on Resolution: 640*480 ***FORCING FORMAT
+
+Grey_Avg_fps: 15.731
+Grey_Avg_ET: 4268.083984us
+Grey_WCET: 244608.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 15.334
+Bright_Avg_ET: 7430.681152us
+Bright_WCET: 239424.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 15.134
+Contrast_Avg_ET: 16450.046875us
+Contrast_WCET: 167360.000000us
+
+
+*** Ended on Resolution: 640*480 ***
+
+*** Started on Resolution: 320*240 ***FORCING FORMAT
+
+Grey_Avg_fps: 15.994
+Grey_Avg_ET: 1436.004028us
+Grey_WCET: 180992.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 15.302
+Bright_Avg_ET: 2421.066895us
+Bright_WCET: 64192.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 15.054
+Contrast_Avg_ET: 4406.281738us
+Contrast_WCET: 66048.000000us
+
+
+*** Ended on Resolution: 320*240 ***
+
+*** Started on Resolution: 160*120 ***FORCING FORMAT
+
+Grey_Avg_fps: 15.037
+Grey_Avg_ET: 1011.084900us
+Grey_WCET: 91904.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 15.005
+Bright_Avg_ET: 927.456543us
+Bright_WCET: 23936.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 15.070
+Contrast_Avg_ET: 1598.081909us
+Contrast_WCET: 60416.000000us
+
+
+*** Ended on Resolution: 160*120 ***
+
