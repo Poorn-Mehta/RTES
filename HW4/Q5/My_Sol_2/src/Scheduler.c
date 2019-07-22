@@ -38,6 +38,8 @@ static char str[20];
 
 //static sig_atomic_t sig_flag;
 
+// Signal & Timer setup functions
+
 static void signal_function(int value)
 {
 	if(value == SIGALRM)
@@ -81,6 +83,7 @@ static void sig_setup(void)
 void *Scheduler_Func(void *para_t)
 {
 
+	// Thread setup
 	struct timespec diff_t, rem_t;
 	float tcalc;
 
@@ -94,9 +97,8 @@ void *Scheduler_Func(void *para_t)
 	sleep_counter = 0;
 	sig_counter = 0;
 
+	// Storing scheduler start time
 	ref_time = Time_Stamp(Mode_us);
-
-	syslog (LOG_INFO, "<%.6fms>!!Scheduler!! Thread Setup Completed on Core: %d", Time_Stamp(Mode_ms), sched_getcpu());
 
 //	sig_setup();
 
@@ -105,8 +107,10 @@ void *Scheduler_Func(void *para_t)
 	while(frames < No_of_Frames)
 	{
 
+		// Releasing monitor service first 
 		sem_post(&Monitor_Sem);
 
+		// Sleeping for 1ms (queue delay - suspected)
 		diff_t.tv_sec = 0;
 		diff_t.tv_nsec = ms_to_ns;
 
@@ -118,10 +122,12 @@ void *Scheduler_Func(void *para_t)
 
 //		sem_wait(&Sched_Sem);
 
+		// Releasing rest of the threads 
 		sem_post(&Grey_Sem);
 		sem_post(&Brightness_Sem);
 		sem_post(&Contrast_Sem);
 
+		// Trying to nullify jitter on each run
 		tcalc = Time_Stamp(Mode_us);
 		tcalc -= ref_time;
 		tcalc -= (float)(sleep_counter * (Deadline_ms * ms_to_us));
@@ -140,6 +146,7 @@ void *Scheduler_Func(void *para_t)
 
 //		sem_wait(&Sched_Sem);
 
+		// Incrementing frame count if every transformation is complete
 		if((Complete_Var & Total_Complete) == Total_Complete)
 		{
 			clock_gettime(CLOCK_REALTIME, &stop_time_1);
@@ -177,6 +184,8 @@ void *Scheduler_Func(void *para_t)
 	sem_post(&Grey_Sem);
 	sem_post(&Brightness_Sem);
 	sem_post(&Contrast_Sem);
+
+	// Analysis
 
 	// GREY
 

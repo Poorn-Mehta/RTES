@@ -35,6 +35,7 @@ static uint8_t bigbuffer[Big_Buffer_Size];
 static float us_tstamp1, us_tstamp2; 
 static uint32_t i;
 
+// To read latest captured frame information - from monitor thread
 static uint8_t Grey_Q_Setup(void)
 {
 	// Queue setup
@@ -54,6 +55,7 @@ static uint8_t Grey_Q_Setup(void)
 static char pgm_header[]="P5\n#9999999999 sec 9999999999 msec \n"HRES_STR" "VRES_STR"\n255\n";
 static char pgm_dumpname[]="img/r0/grey00000000.pgm";
 
+// Function to store processed image
 static void dump_pgm(const void *p, int size, unsigned int tag, struct timespec *time)
 {
 	int written, i, total, dumpfd;
@@ -62,6 +64,8 @@ static void dump_pgm(const void *p, int size, unsigned int tag, struct timespec 
 	snprintf(&pgm_header[4], 11, "%010d", (int)time->tv_sec);
 	strncat(&pgm_header[14], " sec ", 5);
 	snprintf(&pgm_header[19], 11, "%010d", (int)((time->tv_nsec)/1000000));
+
+	// Switching based on current resolution for appropriate destination
 	switch(res)
 	{
 		case 0:
@@ -137,6 +141,7 @@ static void dump_pgm(const void *p, int size, unsigned int tag, struct timespec 
 	Complete_Var |= Grey_Complete_Mask;
 }
 
+// Image processing
 static void process_image(const void *p, int size)
 {
 	int i, newi, newsize = 0, tmp;
@@ -190,6 +195,7 @@ static void process_image(const void *p, int size)
 
 void *Cam_Grey_Func(void *para_t)
 {
+	// Thread setup
 	framecnt = 0;
 //	old_framcnt = 0;
 	us_tstamp1 = 0;
@@ -212,14 +218,12 @@ void *Cam_Grey_Func(void *para_t)
 
 	while(1)
 	{
-
+		// Record timestamp which signals end of iteration (next step: block on semaphore)
 		clock_gettime(CLOCK_REALTIME, &stamp1);	
 
-//		us_tstamp1 = Time_Stamp(Mode_us);
-
+		// Calculate time difference (skip this for first frame, since the calculation is invalid at this point)
 		if(i > 0)
 		{
-//			Grey_Exec_Rem[i-1] = ((float)(Deadline_ms * ms_to_us) - (us_tstamp1 - us_tstamp2));
 			if(stamp1.tv_nsec >= stamp2.tv_nsec)
 			{
 				Grey_Exec_Rem[i-1] = (float)((stamp1.tv_sec - stamp2.tv_sec) * s_to_us) + (float)((stamp1.tv_nsec - stamp2.tv_nsec) * ns_to_us);
@@ -233,25 +237,26 @@ void *Cam_Grey_Func(void *para_t)
 			Grey_Exec_Rem[i-1] = (float)(Deadline_ms * ms_to_us) - Grey_Exec_Rem[i-1];
 		}
 
+		// Wait for scheduler to release this
 		sem_wait(&Grey_Sem);
 
+		// Record timestamp which signals start of iteration
 		clock_gettime(CLOCK_REALTIME, &stamp2);	
 
-//		us_tstamp2 = Time_Stamp(Mode_us);
-
 		i += 1;
-
-//		old_framcnt = framecnt;
 		
+		// Check if thread needs to be terminated
 		if(Terminate_Flag != 0)
 		{
 			break;
 		}
 
+		// 0 timeout for timed_received of queue
 		clock_gettime(CLOCK_REALTIME, &curr_time);
 
 		q_recv_resp = mq_timedreceive(grey_queue, &info_p, sizeof(frame_p_buffer), 0, &curr_time);
 
+		// Check the result of timed receive
 		if((q_recv_resp < 0) && (errno != ETIMEDOUT))
 		{
 			syslog(LOG_ERR, "<%.6fms>!!Cam_Grey!! Queue receiving Error", Time_Stamp(Mode_ms));
@@ -260,6 +265,7 @@ void *Cam_Grey_Func(void *para_t)
 
 		else if(q_recv_resp == sizeof(frame_p_buffer))
 		{
+			// Ensure that it is not processing the same frame 
 			if((Complete_Var & Grey_Complete_Mask) == 0)
 			{
 				process_image((void *)info_p.start, info_p.length);
@@ -273,6 +279,7 @@ void *Cam_Grey_Func(void *para_t)
 
 		}
 
+		// No frame condition - increment to check the efficiency 
 		else if(errno == ETIMEDOUT)
 		{
 			Grey_No_Frame[res] += 1;

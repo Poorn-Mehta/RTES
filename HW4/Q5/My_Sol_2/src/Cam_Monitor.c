@@ -43,6 +43,8 @@ static float difference_ms_2 = 0, frame_rate_2 = 0, avg_fps = 0;
 
 static uint8_t warmup;
 
+// Multiple queue setups for sending frame data
+
 static uint8_t Grey_Q_Setup(void)
 {
 	// Queue setup
@@ -144,9 +146,11 @@ uint8_t read_frame(void)
 
 	assert(i < n_buffers);
 
+	// Storing pointer to frame buffer in structure that will be sent over queue
 	info_p.start = (void *) buf.m.userptr;
 	info_p.length = buf.bytesused;
 
+	// If it's just for warming up, don't send data through queue
 	if(warmup == 0)
 	{
 
@@ -252,10 +256,10 @@ void device_warmup(void)
 	warmup = 0;
 }
 
-// Following function implements writer Thread
 void *Cam_Monitor_Func(void *para_t)
 {
 
+	// Setup queues
 	if(Grey_Q_Setup() != 0) 
 	{
 		syslog (LOG_ERR, "<%.6fms>!!Cam_Monitor!! Thread Setup Failed", Time_Stamp(Mode_ms));
@@ -286,8 +290,10 @@ void *Cam_Monitor_Func(void *para_t)
 	while(1)
 	{
 
+		// Wait for scheduler
 		sem_wait(&Monitor_Sem);
 		
+		// Check whether thread needs to be terminated or not 
 		if(Terminate_Flag != 0)
 		{
 			break;
@@ -340,12 +346,11 @@ void *Cam_Monitor_Func(void *para_t)
 			continue;
 		}
 
-//		syslog (LOG_INFO, "<%.6fms>!!Cam_Monitor!! Compare Stamps", Time_Stamp(Mode_ms));
-
 //		if((Complete_Var & Process_Complete_Mask) != 0)
 //		{
 //			Complete_Var &= ~(Process_Complete_Mask);
 
+			// Time stamp for FPS calculation
 			clock_gettime(CLOCK_REALTIME, &start_time_1);
 
 			// If select() indicated that device is ready for reading from it, then grab a frame
