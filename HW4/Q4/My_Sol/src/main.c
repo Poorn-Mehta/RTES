@@ -82,7 +82,7 @@ int main (int argc, char *argv[])
 	pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
 	pthread_create(&Cam_Monitor_Thread, &Attr_All, Cam_Monitor_Func, (void *)0);
 
-	// Give fifth highest priority to the Cam_Compress thread, Bind it to CPU 3, and create it
+	// Give fifth highest priority to the Cam_Grey thread, Bind it to CPU 3, and create it
 	Bind_to_CPU(3);
 	Attr_Sch.sched_priority = FIFO_Max_Prio - 4;
 	pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
