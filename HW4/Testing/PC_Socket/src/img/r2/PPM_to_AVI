@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo "Please input FrameRate for Video"
+read FPS
+echo "You've selected $FPS FPS"
+echo "Please input name of the output file with .avi extension"
+read FileName
+echo "File: $FileNane will be generated"
+ffmpeg -pattern_type glob -framerate $FPS -i "*.ppm" $FileName

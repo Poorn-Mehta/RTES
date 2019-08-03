@@ -4,7 +4,7 @@ static store_struct frame_info;
 static uint8_t frame_data[Big_Buffer_Size];
 static int new_socket, custom_socket, total_w_bytes, written_bytes, total_r_bytes, read_bytes, dumpfd;
 static struct sockaddr_in custom_server;
-static uint32_t frames, buf_index;
+static uint32_t frames, buf_index, total_frames;
 static int tmp_opt = 1;
 
 static uint8_t Socket_Init(void)
@@ -69,10 +69,11 @@ void *Socket_Func(void *para_t)
 	}
 
 	frames = 0;
+	total_frames = Default_Frames;
 
 	syslog(LOG_INFO, "<%.6fms>!!Socket!! Setup Completed", Time_Stamp(Mode_ms));
 
-	while(frames < No_of_Frames) 
+	while(frames < total_frames) 
 	{
 
 		read_bytes = read(custom_socket, &frame_info, sizeof(store_struct));
@@ -93,7 +94,7 @@ void *Socket_Func(void *para_t)
 
 		syslog(LOG_INFO, "<%.6fms>!!Socket!! Successfully Received Frame: %d", Time_Stamp(Mode_ms), frames);
 
-//		syslog(LOG_INFO, "<%.6fms>!!Socket!! Path: %s", Time_Stamp(Mode_ms), frame_info.filename);
+		total_frames = frame_info.total_frames;
 
 		dumpfd = open(frame_info.filename, O_WRONLY | O_CREAT, 00666);
 

@@ -73,9 +73,6 @@
 #define ns_to_ms		(float)0.000001
 #define ns_to_s			(float)0.000000001
 
-#define Wrap_around_Frames	101
-#define No_of_Frames        6001
-
 #define No_of_Buffers	    100
 #define Big_Buffer_Size     640*480*3
 
@@ -87,6 +84,8 @@
 
 #define Segment_Size	1024
 
+#define Default_Frames	100
+
 typedef struct
 {
 	char filename[Filename_Len];
@@ -94,6 +93,7 @@ typedef struct
 	uint8_t *dataptr;
 	uint32_t headersize;
 	uint32_t filesize;
+	uint32_t total_frames;
 } store_struct;
 
 float Time_Stamp(uint8_t mode);
