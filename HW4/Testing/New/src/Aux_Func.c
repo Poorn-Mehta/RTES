@@ -13,6 +13,192 @@ extern pthread_attr_t Attr_All;
 extern struct sched_param Attr_Sch;
 extern uint8_t FIFO_Max_Prio, FIFO_Min_Prio;
 extern cpu_set_t CPU_Core;
+extern strct_analyze Analysis;
+extern uint32_t Target_FPS, Deadline_ms, Scheduler_Deadline, Monitor_Deadline, sch_index;
+
+static uint32_t i;
+static float sum_1, sum_2, sum_3, sum_4, sum_5, sum_6;
+
+void Show_Analysis(void)
+{
+
+	sum_1 = 0;
+	sum_4 = 0;
+
+	for(i = 0; i < sch_index; i ++)
+	{
+		Analysis.Jitter_Analysis.Scheduler_Jitter[i] = Analysis.Exec_Analysis.Scheduler_Exec[i] - (float)Scheduler_Deadline;
+		syslog (LOG_INFO, "!!Sch_Exec!! %.3f", Analysis.Exec_Analysis.Scheduler_Exec[i]);
+		syslog (LOG_INFO, "!!Sch_Jitter!! %.3f", Analysis.Jitter_Analysis.Scheduler_Jitter[i]);
+
+		sum_1 += Analysis.Jitter_Analysis.Scheduler_Jitter[i];
+
+		if(Analysis.Jitter_Analysis.Max_Jitter[Scheduler_TID] <= fabs(Analysis.Jitter_Analysis.Scheduler_Jitter[i]))
+		{
+			Analysis.Jitter_Analysis.Max_Jitter[Scheduler_TID] = fabs(Analysis.Jitter_Analysis.Scheduler_Jitter[i]);
+		}
+
+		sum_4 += Analysis.Exec_Analysis.Scheduler_Exec[i];
+
+		if(Analysis.Exec_Analysis.WCET[Scheduler_TID] <= fabs(Analysis.Exec_Analysis.Scheduler_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[Scheduler_TID] = fabs(Analysis.Exec_Analysis.Scheduler_Exec[i]);
+		}
+	}
+
+	Analysis.Jitter_Analysis.Avg_Jitter[Scheduler_TID] = sum_1 / sch_index;
+
+	Analysis.Exec_Analysis.Avg_Exec[Scheduler_TID] = sum_4 / sch_index;
+
+	sum_1 = 0;
+	sum_4 = 0;
+
+	for(i = 0; i < Monitor_Loop_Count; i ++)
+	{
+		Analysis.Jitter_Analysis.Monitor_Jitter[i] = Analysis.Exec_Analysis.Monitor_Exec[i] - (float)Monitor_Deadline;
+		syslog (LOG_INFO, "!!Mon_Exec!! %.3f", Analysis.Exec_Analysis.Monitor_Exec[i]);
+		syslog (LOG_INFO, "!!Mon_Jitter!! %.3f", Analysis.Jitter_Analysis.Monitor_Jitter[i]);
+
+		sum_1 += Analysis.Jitter_Analysis.Monitor_Jitter[i];
+
+		if(Analysis.Jitter_Analysis.Max_Jitter[Monitor_TID] <= fabs(Analysis.Jitter_Analysis.Monitor_Jitter[i]))
+		{
+			Analysis.Jitter_Analysis.Max_Jitter[Monitor_TID] = fabs(Analysis.Jitter_Analysis.Monitor_Jitter[i]);
+		}
+
+		sum_4 += Analysis.Exec_Analysis.Monitor_Exec[i];
+
+		if(Analysis.Exec_Analysis.WCET[Monitor_TID] <= fabs(Analysis.Exec_Analysis.Monitor_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[Monitor_TID] = fabs(Analysis.Exec_Analysis.Monitor_Exec[i]);
+		}
+	}
+
+	Analysis.Jitter_Analysis.Avg_Jitter[Monitor_TID] = sum_1 / Monitor_Loop_Count;
+
+	Analysis.Exec_Analysis.Avg_Exec[Monitor_TID] = sum_4 / Monitor_Loop_Count;
+
+	sum_1 = 0;
+	sum_2 = 0;
+	sum_3 = 0;
+	sum_4 = 0;
+	sum_5 = 0;
+	sum_6 = 0;
+
+	for(i = 0; i < No_of_Frames; i ++)
+	{
+		Analysis.Jitter_Analysis.Brightness_Jitter[i] = Analysis.Exec_Analysis.Brightness_Exec[i] - (float)Deadline_ms;
+		syslog (LOG_INFO, "!!Brgt_Exec!! %.3f", Analysis.Exec_Analysis.Brightness_Exec[i]);
+		syslog (LOG_INFO, "!!Brgt_Jitter!! %.3f", Analysis.Jitter_Analysis.Brightness_Jitter[i]);
+
+		sum_1 += Analysis.Jitter_Analysis.Brightness_Jitter[i];
+
+		if(Analysis.Jitter_Analysis.Max_Jitter[Brightness_TID] <= fabs(Analysis.Jitter_Analysis.Brightness_Jitter[i]))
+		{
+			Analysis.Jitter_Analysis.Max_Jitter[Brightness_TID] = fabs(Analysis.Jitter_Analysis.Brightness_Jitter[i]);
+		}
+
+		sum_4 += Analysis.Exec_Analysis.Brightness_Exec[i];
+
+		if(Analysis.Exec_Analysis.WCET[Brightness_TID] <= fabs(Analysis.Exec_Analysis.Brightness_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[Brightness_TID] = fabs(Analysis.Exec_Analysis.Brightness_Exec[i]);
+		}
+
+		Analysis.Jitter_Analysis.Storage_Jitter[i] = Analysis.Exec_Analysis.Storage_Exec[i] - (float)Deadline_ms;
+		syslog (LOG_INFO, "!!Store_Exec!! %.3f", Analysis.Exec_Analysis.Storage_Exec[i]);
+		syslog (LOG_INFO, "!!Store_Jitter!! %.3f", Analysis.Jitter_Analysis.Storage_Jitter[i]);
+
+		sum_2 += Analysis.Jitter_Analysis.Storage_Jitter[i];
+
+		if(Analysis.Jitter_Analysis.Max_Jitter[Storage_TID] <= fabs(Analysis.Jitter_Analysis.Storage_Jitter[i]))
+		{
+			Analysis.Jitter_Analysis.Max_Jitter[Storage_TID] = fabs(Analysis.Jitter_Analysis.Storage_Jitter[i]);
+		}
+
+		sum_5 += Analysis.Exec_Analysis.Storage_Exec[i];
+
+		if(Analysis.Exec_Analysis.WCET[Storage_TID] <= fabs(Analysis.Exec_Analysis.Storage_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[Storage_TID] = fabs(Analysis.Exec_Analysis.Storage_Exec[i]);
+		}
+
+		Analysis.Jitter_Analysis.Socket_Jitter[i] = Analysis.Exec_Analysis.Socket_Exec[i] - (float)Deadline_ms;
+		syslog (LOG_INFO, "!!Sock_Exec!! %.3f", Analysis.Exec_Analysis.Socket_Exec[i]);
+		syslog (LOG_INFO, "!!Sock_Jitter!! %.3f", Analysis.Jitter_Analysis.Socket_Jitter[i]);
+
+		sum_3 += Analysis.Jitter_Analysis.Socket_Jitter[i];
+
+		if(Analysis.Jitter_Analysis.Max_Jitter[Socket_TID] <= fabs(Analysis.Jitter_Analysis.Socket_Jitter[i]))
+		{
+			Analysis.Jitter_Analysis.Max_Jitter[Socket_TID] = fabs(Analysis.Jitter_Analysis.Socket_Jitter[i]);
+		}
+
+		sum_6 += Analysis.Exec_Analysis.Socket_Exec[i];
+
+		if(Analysis.Exec_Analysis.WCET[Socket_TID] <= fabs(Analysis.Exec_Analysis.Socket_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[Socket_TID] = fabs(Analysis.Exec_Analysis.Socket_Exec[i]);
+		}
+	}
+
+	Analysis.Jitter_Analysis.Avg_Jitter[Brightness_TID] = sum_1 / No_of_Frames;
+	Analysis.Jitter_Analysis.Avg_Jitter[Storage_TID] = sum_2 / No_of_Frames;
+	Analysis.Jitter_Analysis.Avg_Jitter[Socket_TID] = sum_3 / No_of_Frames;
+
+	Analysis.Exec_Analysis.Avg_Exec[Brightness_TID] = sum_4 / No_of_Frames;
+	Analysis.Exec_Analysis.Avg_Exec[Storage_TID] = sum_5 / No_of_Frames;
+	Analysis.Exec_Analysis.Avg_Exec[Socket_TID] = sum_6 / No_of_Frames;
+
+	printf("\n\n**********Detailed Analysis Below**********\n");
+
+	printf("\n---GREP_INFO---\n");
+	printf("\ngrep -a Sch_Exec syslog\ngrep -a Sch_Jitter syslog\ngrep -a Mon_Exec syslog\ngrep -a Mon_Jitter syslog");
+	printf("\ngrep -a Brgt_Exec syslog\ngrep -a Brgt_Jitter syslog\ngrep -a Store_Exec syslog\ngrep -a Store_Jitter syslog\ngrep -a Sock_Exec syslog\ngrep -a Sock_Jitter syslog");
+
+	printf("\n\nMax FPS: %.3f", Analysis.Max_FPS);
+	printf("\nProgram Ran at %.3f FPS (Target FPS: %.3f)", Analysis.Running_FPS, (float)Target_FPS);
+
+	printf("\n\nTotal Missed Deadline(s): %u (Total Frames: %d)", Analysis.Missed_Deadlines, No_of_Frames);
+
+	printf("\n\nAverage Execution Time of Scheduler: %.3fms (Deadline: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[Scheduler_TID], (float)Scheduler_Deadline);
+	printf("\nWorst Case Execution Time of Scheduler: %.3fms", Analysis.Exec_Analysis.WCET[Scheduler_TID]);
+
+	printf("\n\nAverage Execution Time of Monitor: %.3fms (Deadline: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[Monitor_TID], (float)Monitor_Deadline);
+	printf("\nWorst Case Execution Time of Monitor: %.3fms", Analysis.Exec_Analysis.WCET[Monitor_TID]);
+
+	printf("\n\nAverage Execution Time of Brightness: %.3fms (Deadline: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[Brightness_TID], (float)Deadline_ms);
+	printf("\nWorst Case Execution Time of Brightness: %.3fms", Analysis.Exec_Analysis.WCET[Brightness_TID]);
+
+	printf("\n\nAverage Execution Time of Storage: %.3fms (Goal: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[Storage_TID], (float)Deadline_ms);
+	printf("\nWorst Case Execution Time of Storage: %.3fms", Analysis.Exec_Analysis.WCET[Storage_TID]);
+
+	printf("\n\nAverage Execution Time of Socket: %.3fms (Goal: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[Socket_TID], (float)Deadline_ms);
+	printf("\nWorst Case Execution Time of Socket: %.3fms", Analysis.Exec_Analysis.WCET[Socket_TID]);
+
+	printf("\n\nOverall Jitter/Deviation of Scheduler: %.3fms", Analysis.Jitter_Analysis.Overall_Jitter[Scheduler_TID]);
+	printf("\nAverage Jitter of Scheduler: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[Scheduler_TID]);
+	printf("\nMaximum (Absolute) Jitter of Scheduler: %.3fms", Analysis.Jitter_Analysis.Max_Jitter[Scheduler_TID]);
+
+	printf("\n\nOverall Jitter/Deviation of Monitor: %.3fms", Analysis.Jitter_Analysis.Overall_Jitter[Monitor_TID]);
+	printf("\nAverage Jitter of Monitor: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[Monitor_TID]);
+	printf("\nMaximum (Absolute) Jitter of Monitor: %.3fms", Analysis.Jitter_Analysis.Max_Jitter[Monitor_TID]);
+
+	printf("\n\nOverall Jitter/Deviation of Brightness: %.3fms", Analysis.Jitter_Analysis.Overall_Jitter[Brightness_TID]);
+	printf("\nAverage Jitter of Brightness: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[Brightness_TID]);
+	printf("\nMaximum (Absolute) Jitter of Brightness: %.3fms", Analysis.Jitter_Analysis.Max_Jitter[Brightness_TID]);
+
+	printf("\n\nOverall Jitter/Deviation of Storage: %.3fms", Analysis.Jitter_Analysis.Overall_Jitter[Storage_TID]);
+	printf("\nAverage Jitter of Storage: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[Storage_TID]);
+	printf("\nMaximum (Absolute) Jitter of Storage: %.3fms", Analysis.Jitter_Analysis.Max_Jitter[Storage_TID]);
+
+	printf("\n\nOverall Jitter/Deviation of Socket: %.3fms", Analysis.Jitter_Analysis.Overall_Jitter[Socket_TID]);
+	printf("\nAverage Jitter of Socket: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[Socket_TID]);
+	printf("\nMaximum (Absolute) Jitter of Socket: %.3fms", Analysis.Jitter_Analysis.Max_Jitter[Socket_TID]);
+
+	printf("\n\n");
+
+}
 
 // Function to return relative timestamps
 float Time_Stamp(uint8_t mode)

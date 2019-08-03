@@ -3,12 +3,16 @@
 
 extern uint8_t Terminate_Flag;
 extern uint8_t data_buffer[No_of_Buffers][Big_Buffer_Size];
+extern strct_analyze Analysis;
+extern uint32_t Deadline_ms;
 
 static store_struct file_in;
 static mqd_t storage_queue;
 static struct timespec curr_time;
 static int q_recv_resp, dumpfd, total_bytes, written_bytes;
-static uint32_t frames;
+static uint32_t frames, store_index;
+static float Storage_Stamp_1, Storage_Stamp_2;
+static float Storage_Start_Stamp, Storage_End_Stamp;
 
 static uint8_t Storage_Q_Setup(void)
 {
@@ -37,6 +41,7 @@ void *Storage_Func(void *para_t)
 	}
 
 	frames = 0;
+	store_index = 0;
 
 	syslog(LOG_INFO, "<%.6fms>!!Storage!! Thread Setup Completed on Core: %d", Time_Stamp(Mode_ms), sched_getcpu());
 
@@ -46,6 +51,13 @@ void *Storage_Func(void *para_t)
 		curr_time.tv_sec += 1;
 
 		q_recv_resp = mq_timedreceive(storage_queue, (char *)&file_in, sizeof(store_struct), 0, &curr_time);
+
+		if(store_index == 0)
+		{
+			Storage_Start_Stamp = Time_Stamp(Mode_ms);
+		}
+
+		Storage_Stamp_1 = Time_Stamp(Mode_ms);
 
 		// Check the result of timed receive
 		if((q_recv_resp < 0) && (errno != ETIMEDOUT))
@@ -79,11 +91,23 @@ void *Storage_Func(void *para_t)
 			syslog(LOG_INFO, "<%.6fms>!!Storage!! Successfully Stored Frame: %d", Time_Stamp(Mode_ms), frames);
 
 			frames += 1;
+
+			Storage_Stamp_2 = Time_Stamp(Mode_ms);
+
+			Analysis.Exec_Analysis.Storage_Exec[store_index] = Storage_Stamp_2 - Storage_Stamp_1;
+
+			store_index += 1;
 		}
 	}
 
-	syslog (LOG_INFO, "<%.6fms>!!Storage!! Exiting...", Time_Stamp(Mode_ms));
+	Storage_End_Stamp = Time_Stamp(Mode_ms);
+
+	Analysis.Jitter_Analysis.Overall_Jitter[Storage_TID] = Storage_End_Stamp - (Storage_Start_Stamp + (No_of_Frames * Deadline_ms));
+
 	mq_close(storage_queue);
 	mq_unlink(storage_q_name);
+
+	syslog (LOG_INFO, "<%.6fms>!!Storage!! Exiting...", Time_Stamp(Mode_ms));
+
 	pthread_exit(0);
 }

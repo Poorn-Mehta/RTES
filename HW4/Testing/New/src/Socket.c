@@ -1,15 +1,19 @@
 #include "main.h"
 
 extern char target_ip[20];
+extern strct_analyze Analysis;
+extern uint32_t Deadline_ms;
 
 static store_struct file_in;
 static uint8_t frame_data[Big_Buffer_Size];
 static int new_socket, q_recv_resp, total_bytes, written_bytes, read_bytes;
 static struct sockaddr_in client;
-static uint32_t retry_count, frames, buf_index, frame_confirm, Frame_Attempt;
+static uint32_t retry_count, frames, buf_index, frame_confirm, Frame_Attempt, sock_index;
 //static struct timeval sock_timeout;
 static mqd_t socket_queue;
 static struct timespec curr_time;
+static float Socket_Stamp_1, Socket_Stamp_2;
+static float Socket_Start_Stamp, Socket_End_Stamp;
 
 static uint8_t Socket_Q_Setup(void)
 {
@@ -97,6 +101,7 @@ void *Socket_Func(void *para_t)
 	}
 
 	frames = 0;
+	sock_index = 0;
 
 	syslog(LOG_INFO, "<%.6fms>!!Socket!! *EVENT* Thread Setup Completed on Core: %d", Time_Stamp(Mode_ms), sched_getcpu());
 
@@ -112,6 +117,13 @@ void *Socket_Func(void *para_t)
 		curr_time.tv_sec += 1;
 
 		q_recv_resp = mq_timedreceive(socket_queue, (char *)&file_in, sizeof(store_struct), 0, &curr_time);
+
+		if(sock_index == 0)
+		{
+			Socket_Start_Stamp = Time_Stamp(Mode_ms);
+		}
+
+		Socket_Stamp_1 = Time_Stamp(Mode_ms);
 
 		// Check the result of timed receive
 		if((q_recv_resp < 0) && (errno != ETIMEDOUT))
@@ -169,8 +181,20 @@ void *Socket_Func(void *para_t)
 					break;
 				}
 			}
+
+			Socket_Stamp_2 = Time_Stamp(Mode_ms);
+
+			Analysis.Exec_Analysis.Socket_Exec[sock_index] = Socket_Stamp_2 - Socket_Stamp_1;
+
+			sock_index += 1;
+
 		}
 	}
+
+	Socket_End_Stamp = Time_Stamp(Mode_ms);
+
+	Analysis.Jitter_Analysis.Overall_Jitter[Socket_TID] = Socket_End_Stamp - (Socket_Start_Stamp + (No_of_Frames * Deadline_ms));
+
 	syslog (LOG_INFO, "<%.6fms>!!Socket!! Exiting...", Time_Stamp(Mode_ms));
 	mq_close(socket_queue);
 	mq_unlink(socket_q_name);

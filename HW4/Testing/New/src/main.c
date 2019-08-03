@@ -53,35 +53,182 @@ frame_p_buffer shared_struct;
 
 uint8_t data_buffer[No_of_Buffers][Big_Buffer_Size];
 
-char target_ip[20];
+char target_ip[IP_Addr_Len];
+
+struct timespec prev_t;
+
+strct_analyze Analysis;
+
+struct utsname sys_info;
+
+uint32_t sch_index;
+
+uint8_t Operating_Mode;
+uint32_t Target_FPS = 1;
+uint32_t Deadline_ms = 1000;
+uint32_t Scheduler_Deadline = 10;
+uint32_t Monitor_Deadline = 100;
 
 int main (int argc, char *argv[])
 {
 
-	if(argc > 1)
+	Operating_Mode = 0;
+
+	if(argc > 3)
 	{
-		strcpy(target_ip, argv[1]);
-		printf("IP entered - trying to connect to: %s\n", target_ip);
+		strncpy(target_ip, argv[3], IP_Addr_Len);
+		printf("\nIP entered - trying to connect to: %s", target_ip);
+
+		if((strncmp(Mode_Socket_OFF, argv[2], 5)) == 0)
+		{
+			Operating_Mode &= ~(Mode_Socket_Mask);
+			printf("\nSocket is Turned OFF");
+		}
+
+		else if((strncmp(Mode_Socket_ON, argv[2], 5)) == 0)
+		{
+			Operating_Mode |= (Mode_Socket_Mask);
+			printf("\nSocket is Turned ON");
+		}
+
+		else
+		{
+			Operating_Mode &= ~(Mode_Socket_Mask);
+			printf("\nInvalid Argument, Socket is turned OFF by default");
+		}
+
+		if((strncmp(Mode_1_FPS, argv[1], 10)) == 0)
+		{
+			Operating_Mode &= ~(Mode_FPS_Mask);
+			printf("\nSelected FPS: 1");
+		}
+
+		else if((strncmp(Mode_10_FPS, argv[1], 10)) == 0)
+		{
+			Operating_Mode |= (Mode_FPS_Mask);
+			printf("\nSelected FPS: 10");
+		}
+
+		else
+		{
+			Operating_Mode &= ~(Mode_FPS_Mask);
+			printf("\nInvalid Argument, Selected FPS: 1 by default");
+		}
 	}
+
+	else if(argc > 2)
+	{
+
+		strncpy(target_ip, Default_IP, IP_Addr_Len);
+		printf("\nNo IP entered - will connect to default: %s", target_ip);
+
+		if((strncmp(Mode_Socket_OFF, argv[2], 5)) == 0)
+		{
+			Operating_Mode &= ~(Mode_Socket_Mask);
+			printf("\nSocket is Turned OFF");
+		}
+
+		else if((strncmp(Mode_Socket_ON, argv[2], 5)) == 0)
+		{
+			Operating_Mode |= (Mode_Socket_Mask);
+			printf("\nSocket is Turned ON");
+		}
+
+		else
+		{
+			Operating_Mode &= ~(Mode_Socket_Mask);
+			printf("\nInvalid Argument, Socket is turned OFF by default");
+		}
+
+		if((strncmp(Mode_1_FPS, argv[1], 10)) == 0)
+		{
+			Operating_Mode &= ~(Mode_FPS_Mask);
+			printf("\nSelected FPS: 1");
+		}
+
+		else if((strncmp(Mode_10_FPS, argv[1], 10)) == 0)
+		{
+			Operating_Mode |= (Mode_FPS_Mask);
+			printf("\nSelected FPS: 10");
+		}
+
+		else
+		{
+			Operating_Mode &= ~(Mode_FPS_Mask);
+			printf("\nInvalid Argument, Selected FPS: 1 by default");
+		}
+	}
+
+	else if(argc > 1)
+	{
+		strncpy(target_ip, Default_IP, IP_Addr_Len);
+		printf("No IP entered - will connect to default: %s\n", target_ip);
+
+		Operating_Mode &= ~(Mode_FPS_Mask);
+		printf("\nNo Argument for Socket, It is turned OFF by default");
+
+		if((strncmp(Mode_1_FPS, argv[1], 10)) == 0)
+		{
+			Operating_Mode &= ~(Mode_FPS_Mask);
+			printf("\nSelected FPS: 1");
+		}
+
+		else if((strncmp(Mode_10_FPS, argv[1], 10)) == 0)
+		{
+			Operating_Mode |= (Mode_FPS_Mask);
+			printf("\nSelected FPS: 10");
+		}
+
+		else
+		{
+			Operating_Mode &= ~(Mode_FPS_Mask);
+			printf("\nInvalid Argument, Selected FPS: 1 by default");
+		}
+	}
+
 	else
 	{
-		strcpy(target_ip, Default_IP);
-		printf("No IP entered - will connect to default: %s\n", target_ip);
+		strncpy(target_ip, Default_IP, IP_Addr_Len);
+		printf("\nNo IP entered - will connect to default: %s", target_ip);
+
+		Operating_Mode &= ~(Mode_Socket_Mask);
+		printf("\nNo Argument for Socket, It is turned OFF by default");
+
+		Operating_Mode &= ~(Mode_FPS_Mask);
+		printf("\nNo Argument for FPS, Selected FPS: 1 by default");
 	}
+
+	if((Operating_Mode & Mode_FPS_Mask) == Mode_10_FPS_Val)
+	{
+		Target_FPS = 10;
+	}
+
+	else
+	{
+		Target_FPS = 1;
+	}
+
+	Deadline_ms = 1000 / Target_FPS;
+
+	Scheduler_Deadline = Deadline_ms / Scheduler_Scaling_Factor;
+
+	Monitor_Deadline = Deadline_ms / Monitor_Scaling_Factor;
 
 	uint32_t i;
 	// Record program start time, to provide relative time throughout the execution
 	clock_gettime(CLOCK_REALTIME, &start_time);
 
 	// Setup logger
-	Set_Logger("Sock_Test", LOG_DEBUG);
+	Set_Logger("Testing", LOG_DEBUG);
 
-	printf("\nThis Program uses Syslog instead of printf\n");
-	printf("\nExecute following to see the output:\n\ncd /var/log && grep Sock_Test syslog\n");
+	printf("\n\nThis Program uses Syslog instead of printf\n");
+	printf("\nExecute following to see the output:\n\ncd /var/log && grep -a Testing syslog\n");
 
 	dev_name = "/dev/video0";
 
 	res = 2;
+
+	CLEAR(Analysis);
 
 	syslog (LOG_INFO, ">>>>>>>>>> Program Start <<<<<<<<<<");
 
@@ -90,11 +237,13 @@ int main (int argc, char *argv[])
 	{
 		exit(-1);
 	}
-/*
-	FILE *fp;
-	fp = fopen("fps_analysis.txt", "a+");
 
-	fprintf(fp, "\n>>>>>>>>>>FPS Analysis (No Accumulation, Frames: %d) <<<<<<<<<<\n", No_of_Frames);*/
+	if (uname(&sys_info) != 0)
+	{
+		perror("uname");
+		exit(EXIT_FAILURE);
+	}
+
 
 	for(i = 0; i < Iterations; i ++)
 	{			
@@ -160,11 +309,23 @@ int main (int argc, char *argv[])
 		init_device();
 		start_capturing();
 
-		device_warmup();
-//		device_warmup();
-//		device_warmup();
+		if(device_warmup() == 0)
+		{
+			syslog(LOG_INFO, "<%.6fms>!!Cam_Monitor!! Device Warmup Successful", Time_Stamp(Mode_ms));
+		}
+
+		else
+		{
+			syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! Device Warmup Failed", Time_Stamp(Mode_ms));
+		}
 
 		usleep(10000);
+
+		if((Operating_Mode & Mode_FPS_Mask) == Mode_1_FPS_Val)
+		{
+			Cam_Filter();
+			usleep(10000);
+		}
 
 		Bind_to_CPU(3);
 		Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
@@ -186,16 +347,23 @@ int main (int argc, char *argv[])
 		pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
 		pthread_create(&Storage_Thread, &Attr_All, Storage_Func, (void *)0);
 
-		Bind_to_CPU(1);
-		Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
-		pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
-		pthread_create(&Socket_Thread, &Attr_All, Socket_Func, (void *)0); 
+		if((Operating_Mode & Mode_Socket_Mask) == Mode_Socket_ON_Val)
+		{
+			Bind_to_CPU(1);
+			Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
+			pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
+			pthread_create(&Socket_Thread, &Attr_All, Socket_Func, (void *)0);
+		}
 
 		pthread_join(Cam_Monitor_Thread, 0); 
 		pthread_join(Cam_Brightness_Thread, 0);
 		pthread_join(Scheduler_Thread, 0); 
 		pthread_join(Storage_Thread, 0);
-		pthread_join(Socket_Thread, 0);
+
+		if((Operating_Mode & Mode_Socket_Mask) == Mode_Socket_ON_Val)
+		{
+			pthread_join(Socket_Thread, 0);
+		}
 
 		stop_capturing();
 		uninit_device();
@@ -207,8 +375,11 @@ int main (int argc, char *argv[])
 		printf("\n*** Ended on Resolution: %d*%d ***\n\n", HRES, VRES);
 
 		sem_destroy(&Brightness_Sem);
+		sem_destroy(&Monitor_Sem);
 
 	} 
+
+	Show_Analysis();
 
 	syslog (LOG_INFO, ">>>>>>>>>> Program End <<<<<<<<<<");
 
