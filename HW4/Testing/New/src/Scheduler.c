@@ -10,7 +10,7 @@ extern strct_analyze Analysis;
 static uint32_t frames = 0, sch_cnt;
 static int resp;
 static uint8_t startup;
-static float Running_FPS_Stamp_1, Running_FPS_Stamp_2, Deadline_Stamp_1, Deadline_Stamp_2, Scheduler_Stamp_1, Scheduler_Stamp_2;
+static float Running_FPS_Stamp_1, Running_FPS_Stamp_2, Scheduler_Stamp_1, Scheduler_Stamp_2;
 
 void *Scheduler_Func(void *para_t)
 {
@@ -63,6 +63,7 @@ void *Scheduler_Func(void *para_t)
 		if(sch_index == 0)
 		{
 			Scheduler_Stamp_1 = Time_Stamp(Mode_ms);
+//			Deadline_Stamp_1 = Scheduler_Stamp_1;
 		}
 
 		if((sch_cnt % 10) == 0)
@@ -76,7 +77,7 @@ void *Scheduler_Func(void *para_t)
 //			sem_post(&Monitor_Sem);
 			if(startup >= Useless_Frames)
 			{
-				Deadline_Stamp_1 = Time_Stamp(Mode_ms);
+//				Deadline_Stamp_1 = Time_Stamp(Mode_ms);
 				sem_post(&Brightness_Sem);
 			}
 			else
@@ -87,15 +88,18 @@ void *Scheduler_Func(void *para_t)
 
 		if((Complete_Var & Brightness_Complete_Mask) == Brightness_Complete_Mask)
 		{
-			Deadline_Stamp_2 = Time_Stamp(Mode_ms);
+/*			Deadline_Stamp_2 = Time_Stamp(Mode_ms);
 
 			if((Deadline_Stamp_2 - Deadline_Stamp_1) > (float)Deadline_ms)
 			{
 				Analysis.Missed_Deadlines += 1;
-			}
+				syslog (LOG_INFO, "!!WEIRD!! Diff: %.3f", Deadline_Stamp_2 - Deadline_Stamp_1);
+			}*/
 
 			Complete_Var = 0;
 			frames += 1;
+
+//			Deadline_Stamp_1 = Time_Stamp(Mode_ms);
 		}
 
 		sch_cnt += 1;

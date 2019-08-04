@@ -85,6 +85,8 @@
 #define Select_Wait_ms		(uint32_t)10
 #define Monitor_Sleep_ms	(uint32_t)20
 
+#define Deadline_Overhead_Factor	(float)1.01
+
 #define Iterations		(uint8_t)1
 
 #define Mutex_Timeout_ns	(uint32_t)25000000

@@ -21,7 +21,7 @@ static int q_send_resp;
 static char ppm_header[]="P6\n#9999999999 sec 9999999999 msec \n#SYS_INFO: poorn-desktop aarch64\n"HRES_STR" "VRES_STR"\n255\n";
 static char ppm_dumpname[]="img/r0/rgbc00000000.ppm";
 static float Brightness_Stamp_1, Brightness_Stamp_2;
-static float Brightness_Start_Stamp, Brightness_End_Stamp;
+static float Brightness_Start_Stamp, Brightness_End_Stamp, Deadline_Stamp_1, Deadline_Stamp_2;
 static char tmp_str[200];
 
 static uint8_t Storage_Q_Setup(void)
@@ -155,6 +155,24 @@ static void process_image(const void *p, int size)
 
 	// Absolute timestamp - store the current time in structure
 	clock_gettime(CLOCK_REALTIME, &frame_time);
+
+	if(sock_frame > 0)
+	{
+		Deadline_Stamp_2 = Time_Stamp(Mode_ms);
+
+		if((Deadline_Stamp_2 - Deadline_Stamp_1) > ((float)Deadline_ms * Deadline_Overhead_Factor))
+		{
+			Analysis.Missed_Deadlines += 1;
+			syslog (LOG_INFO, "!!WEIRD!! Diff: %.3f", Deadline_Stamp_2 - Deadline_Stamp_1);
+		}
+
+		Deadline_Stamp_1 = Time_Stamp(Mode_ms);
+	}
+
+	else
+	{
+		Deadline_Stamp_1 = Time_Stamp(Mode_ms);
+	}
 
 	syslog(LOG_INFO, "<%.6fms>!!Cam_Brightness!! Image Processing Start on Frame: %d of Size: %d", Time_Stamp(Mode_ms), framecnt, size);
 
