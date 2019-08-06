@@ -120,9 +120,6 @@
 #define Failed_State	(uint8_t)0
 #define Success_State	(uint8_t)1
 
-#define Wrap_around_Frames	(uint32_t)601
-#define No_of_Frames        (uint32_t)1201
-
 #define No_of_Buffers	    (uint32_t)100
 #define Big_Buffer_Size     (uint32_t)(640*480*3)
 
@@ -142,7 +139,12 @@
 #define Useless_Frames		(uint32_t)2
 #define Test_Frames		(uint32_t)90
 
-#define Warmup_Frames		(uint32_t)30
+#define Frame_to_Capture	(uint32_t)61
+
+#define Wrap_around_Frames	(uint32_t)601
+#define No_of_Frames        (uint32_t)(Frame_to_Capture + Useless_Frames)
+
+#define Warmup_Frames		(uint32_t)100
 
 #define Pix_Allowed_Val		(uint8_t)6
 #define Pix_Max_Val		(uint8_t)255

@@ -68,7 +68,6 @@ void *Storage_Func(void *para_t)
 
 		else if(q_recv_resp == sizeof(store_struct))
 		{
-			//open, write, close
 
 			// Create the file
 			dumpfd = open(&file_in.filename[0], O_WRONLY | O_CREAT, 00666);
@@ -97,6 +96,7 @@ void *Storage_Func(void *para_t)
 			Analysis.Exec_Analysis.Storage_Exec[store_index] = Storage_Stamp_2 - Storage_Stamp_1;
 
 			store_index += 1;
+
 		}
 	}
 

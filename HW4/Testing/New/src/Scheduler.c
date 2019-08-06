@@ -68,7 +68,7 @@ void *Scheduler_Func(void *para_t)
 
 		if((sch_cnt % 10) == 0)
 		{
-			sem_post(&Monitor_Sem);
+//			sem_post(&Monitor_Sem);
 		}
 
 		if((sch_cnt % 100) == 0)
@@ -78,6 +78,7 @@ void *Scheduler_Func(void *para_t)
 			if(startup >= Useless_Frames)
 			{
 //				Deadline_Stamp_1 = Time_Stamp(Mode_ms);
+				sem_post(&Monitor_Sem);
 				sem_post(&Brightness_Sem);
 			}
 			else

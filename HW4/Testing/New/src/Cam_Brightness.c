@@ -14,7 +14,7 @@ extern struct utsname sys_info;
 
 static frame_p_buffer info_p;
 static uint32_t framecnt = 0, sock_frame = 0, brgt_index;
-static uint8_t buf_index;
+static uint8_t buf_index, skip;
 static store_struct file_out;
 static mqd_t storage_queue, socket_queue;
 static int q_send_resp;
@@ -28,10 +28,11 @@ static uint8_t Storage_Q_Setup(void)
 {
     // Queue setup
 	struct mq_attr storage_queue_attr;
+	storage_queue_attr.mq_flags = O_NONBLOCK;
 	storage_queue_attr.mq_maxmsg = queue_size;
 	storage_queue_attr.mq_msgsize = sizeof(store_struct);
 
-	storage_queue = mq_open(storage_q_name, O_CREAT | O_WRONLY | O_CLOEXEC, 0666, &storage_queue_attr);
+	storage_queue = mq_open(storage_q_name, O_CREAT | O_WRONLY | O_NONBLOCK | O_CLOEXEC, 0666, &storage_queue_attr);
 	if(storage_queue == -1)
 	{
 		syslog(LOG_ERR, "<%.6fms>Storage Queue opening error for Cam_Brightness", Time_Stamp(Mode_ms));
@@ -44,10 +45,11 @@ static uint8_t Socket_Q_Setup(void)
 {
 	// Queue setup
 	struct mq_attr socket_queue_attr;
+	socket_queue_attr.mq_flags = O_NONBLOCK;
 	socket_queue_attr.mq_maxmsg = queue_size;
 	socket_queue_attr.mq_msgsize = sizeof(store_struct);
 
-	socket_queue = mq_open(socket_q_name, O_CREAT | O_WRONLY | O_CLOEXEC, 0666, &socket_queue_attr);
+	socket_queue = mq_open(socket_q_name, O_CREAT | O_WRONLY | O_NONBLOCK | O_CLOEXEC, 0666, &socket_queue_attr);
 	if(socket_queue == -1)
 	{
 		syslog(LOG_ERR, "<%.6fms>Socket Queue opening error for Cam_Brightness", Time_Stamp(Mode_ms));
@@ -207,13 +209,21 @@ static void process_image(const void *p, int size)
 		syslog(LOG_ERR, "<%.6fms>!!Cam_Brightness!! Unknown Format", Time_Stamp(Mode_ms));
 	}
 
-	// Increase framecount by 1
-	framecnt += 1;
-	sock_frame += 1;
-
-	if(framecnt >= Wrap_around_Frames)
+	if(skip == 0)
 	{
-		framecnt = 0;
+		// Increase framecount by 1
+		framecnt += 1;
+		sock_frame += 1;
+
+		if(framecnt >= Wrap_around_Frames)
+		{
+			framecnt = 0;
+		}
+	}
+
+	else
+	{
+		skip -= 1;
 	}
 
 	fflush(stderr);
@@ -227,6 +237,7 @@ void *Cam_Brightness_Func(void *para_t)
 	buf_index = 0;
 	sock_frame = 0;
 	brgt_index = 0;
+	skip = Useless_Frames;
 
 	if(Storage_Q_Setup() != 0)
 	{
