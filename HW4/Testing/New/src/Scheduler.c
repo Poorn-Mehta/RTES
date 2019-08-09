@@ -6,6 +6,7 @@ extern uint8_t Complete_Var;
 extern sem_t Sched_Sem, Brightness_Sem, Monitor_Sem;
 extern struct timespec prev_t;
 extern strct_analyze Analysis;
+extern float Monitor_Start_Stamp, Monitor_Stamp_1, Brightness_Start_Stamp, Brightness_Stamp_1;
 
 static uint32_t frames = 0, sch_cnt;
 static int resp;
@@ -63,6 +64,8 @@ void *Scheduler_Func(void *para_t)
 		if(sch_index == 0)
 		{
 			Scheduler_Stamp_1 = Time_Stamp(Mode_ms);
+			Monitor_Start_Stamp = Scheduler_Stamp_1;
+			Brightness_Start_Stamp = Scheduler_Stamp_1;
 //			Deadline_Stamp_1 = Scheduler_Stamp_1;
 		}
 
@@ -78,6 +81,8 @@ void *Scheduler_Func(void *para_t)
 			if(startup >= Useless_Frames)
 			{
 //				Deadline_Stamp_1 = Time_Stamp(Mode_ms);
+				Monitor_Stamp_1 = Time_Stamp(Mode_ms);
+				Brightness_Stamp_1 = Monitor_Stamp_1;
 				sem_post(&Monitor_Sem);
 				sem_post(&Brightness_Sem);
 			}
@@ -115,7 +120,7 @@ void *Scheduler_Func(void *para_t)
 
 	Running_FPS_Stamp_2 = Time_Stamp(Mode_ms);
 
-	Analysis.Jitter_Analysis.Overall_Jitter[Scheduler_TID] = Running_FPS_Stamp_2 - (Running_FPS_Stamp_1 + (Scheduler_Loop_Count * Scheduler_Deadline)); 
+	Analysis.Jitter_Analysis.Overall_Jitter[Scheduler_TID] = Running_FPS_Stamp_2 - (Running_FPS_Stamp_1 + (sch_index * Scheduler_Deadline)); 
 
 	Analysis.Running_FPS = ((No_of_Frames + Useless_Frames) * (float)1000) / (Running_FPS_Stamp_2 - Running_FPS_Stamp_1);
 

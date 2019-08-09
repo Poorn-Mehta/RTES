@@ -18,12 +18,13 @@ extern frame_p_buffer *frame_p;
 extern strct_analyze Analysis;
 extern frame_p_buffer shared_struct;
 extern sem_t Monitor_Sem;
+extern float Monitor_Start_Stamp, Monitor_Stamp_1;
 
 static uint8_t warm = 1;
 static float Warmup_Stamp_1, Warmup_Stamp_2;
-static float Monitor_Stamp_1, Monitor_Stamp_2;
+static float Monitor_Stamp_2;
 static uint32_t mon_index;
-static float Monitor_Start_Stamp, Monitor_End_Stamp;
+static float Monitor_End_Stamp;
 
 //mmap
 uint8_t read_frame(void)
@@ -179,12 +180,12 @@ void *Cam_Monitor_Func(void *para_t)
 
 		sem_wait(&Monitor_Sem);
 
-		if(mon_index == 0)
+/*		if(mon_index == 0)
 		{
 			Monitor_Start_Stamp = Time_Stamp(Mode_ms);
 		}
 
-		Monitor_Stamp_1 = Time_Stamp(Mode_ms);
+		Monitor_Stamp_1 = Time_Stamp(Mode_ms);*/
 		
 		if(Terminate_Flag != 0)
 		{

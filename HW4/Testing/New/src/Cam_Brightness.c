@@ -11,6 +11,7 @@ extern frame_p_buffer shared_struct;
 extern uint8_t data_buffer[No_of_Buffers][Big_Buffer_Size];
 extern strct_analyze Analysis;
 extern struct utsname sys_info;
+extern float Brightness_Start_Stamp, Brightness_Stamp_1;
 
 static frame_p_buffer info_p;
 static uint32_t framecnt = 0, sock_frame = 0, brgt_index;
@@ -20,8 +21,8 @@ static mqd_t storage_queue, socket_queue;
 static int q_send_resp;
 static char ppm_header[]="P6\n#9999999999 sec 9999999999 msec \n#SYS_INFO: poorn-desktop aarch64\n"HRES_STR" "VRES_STR"\n255\n";
 static char ppm_dumpname[]="img/r0/rgbc00000000.ppm";
-static float Brightness_Stamp_1, Brightness_Stamp_2;
-static float Brightness_Start_Stamp, Brightness_End_Stamp, Deadline_Stamp_1, Deadline_Stamp_2;
+static float Brightness_Stamp_2;
+static float Brightness_End_Stamp, Deadline_Stamp_1, Deadline_Stamp_2;
 static char tmp_str[200];
 
 static uint8_t Storage_Q_Setup(void)
@@ -257,12 +258,12 @@ void *Cam_Brightness_Func(void *para_t)
 	{
 		sem_wait(&Brightness_Sem);
 
-		if(brgt_index == 0)
+/*		if(brgt_index == 0)
 		{
 			Brightness_Start_Stamp = Time_Stamp(Mode_ms);
 		}
 
-		Brightness_Stamp_1 = Time_Stamp(Mode_ms);
+		Brightness_Stamp_1 = Time_Stamp(Mode_ms);*/
 
 		if(Terminate_Flag != 0)
 		{

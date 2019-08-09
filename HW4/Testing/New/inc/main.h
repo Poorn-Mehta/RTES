@@ -139,7 +139,7 @@
 #define Useless_Frames		(uint32_t)2
 #define Test_Frames		(uint32_t)90
 
-#define Frame_to_Capture	(uint32_t)61
+#define Frame_to_Capture	(uint32_t)6001
 
 #define Wrap_around_Frames	(uint32_t)601
 #define No_of_Frames        (uint32_t)(Frame_to_Capture + Useless_Frames)
@@ -168,7 +168,7 @@
 #define Scheduler_Scaling_Factor	(uint32_t)100
 #define Scheduler_Loop_Count		(uint32_t)(Scheduler_Scaling_Factor * No_of_Frames * 2)
 
-#define Monitor_Scaling_Factor		(uint32_t)10
+#define Monitor_Scaling_Factor		(uint32_t)1
 #define Monitor_Loop_Count		(uint32_t)(Monitor_Scaling_Factor * No_of_Frames)
 
 typedef struct

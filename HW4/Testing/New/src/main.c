@@ -69,6 +69,8 @@ uint32_t Deadline_ms = 1000;
 uint32_t Scheduler_Deadline = 10;
 uint32_t Monitor_Deadline = 100;
 
+float Monitor_Start_Stamp, Monitor_Stamp_1, Brightness_Start_Stamp, Brightness_Stamp_1;
+
 int main (int argc, char *argv[])
 {
 
