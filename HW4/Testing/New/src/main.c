@@ -221,10 +221,10 @@ int main (int argc, char *argv[])
 	clock_gettime(CLOCK_REALTIME, &start_time);
 
 	// Setup logger
-	Set_Logger("Testing", LOG_DEBUG);
+	Set_Logger("Project_Testing", LOG_DEBUG);
 
 	printf("\n\nThis Program uses Syslog instead of printf\n");
-	printf("\nExecute following to see the output:\n\ncd /var/log && grep -a Testing syslog\n");
+	printf("\nExecute following to see the output:\n\ncd /var/log && grep -a Project_Testing syslog\n");
 
 	dev_name = "/dev/video0";
 
@@ -381,15 +381,23 @@ int main (int argc, char *argv[])
 
 	} 
 
-	Show_Analysis();
-
 	syslog (LOG_INFO, ">>>>>>>>>> Program End <<<<<<<<<<");
-
-	// Destroy attribute
-	pthread_attr_destroy(&Attr_All);
 
 	// Close the log
 	closelog();
+
+	// Setup logger
+	Set_Logger("Project_Analysis", LOG_DEBUG);
+
+	printf("\nExecute following to see the detailed analysis output:\n\ncd /var/log && grep -a Project_Analysis syslog\n");
+
+	Show_Analysis();
+
+	// Close the log
+	closelog();
+
+	// Destroy attribute
+	pthread_attr_destroy(&Attr_All);
 
 	// Exit the program
 	exit(0);

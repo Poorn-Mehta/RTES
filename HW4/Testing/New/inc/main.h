@@ -139,7 +139,7 @@
 #define Useless_Frames		(uint32_t)2
 #define Test_Frames		(uint32_t)90
 
-#define Frame_to_Capture	(uint32_t)6001
+#define Frame_to_Capture	(uint32_t)121
 
 #define Wrap_around_Frames	(uint32_t)601
 #define No_of_Frames        (uint32_t)(Frame_to_Capture + Useless_Frames)
@@ -170,6 +170,8 @@
 
 #define Monitor_Scaling_Factor		(uint32_t)1
 #define Monitor_Loop_Count		(uint32_t)(Monitor_Scaling_Factor * No_of_Frames)
+
+#define PPM_Header_Max_Length	250
 
 typedef struct
 {

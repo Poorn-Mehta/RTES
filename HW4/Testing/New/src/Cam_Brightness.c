@@ -19,11 +19,10 @@ static uint8_t buf_index, skip;
 static store_struct file_out;
 static mqd_t storage_queue, socket_queue;
 static int q_send_resp;
-static char ppm_header[]="P6\n#9999999999 sec 9999999999 msec \n#SYS_INFO: poorn-desktop aarch64\n"HRES_STR" "VRES_STR"\n255\n";
+static char ppm_header[]="P6\n#TIME_STAMP: 9999999999 sec 9999999999 msec \n#SYS_INFO: poorn-desktop aarch64\n"HRES_STR" "VRES_STR"\n255\n";
 static char ppm_dumpname[]="img/r0/rgbc00000000.ppm";
 static float Brightness_Stamp_2;
 static float Brightness_End_Stamp, Deadline_Stamp_1, Deadline_Stamp_2;
-static char tmp_str[200];
 
 static uint8_t Storage_Q_Setup(void)
 {
@@ -64,24 +63,10 @@ static void dump_ppm(uint32_t size, uint32_t tag, uint32_t sock_tag, struct time
 //    int written, total, dumpfd;
 
 	// Store timestamp and resolution in the header
-	snprintf(&ppm_header[4], 11, "%010d", (int)time->tv_sec);
-	strncat(&ppm_header[14], " sec ", 5);
-	snprintf(&ppm_header[19], 11, "%010d", (int)((time->tv_nsec)/1000000)); 
-//	strncat(&ppm_header[29], " msec \n"HRES_STR" "VRES_STR"\n255\n", 19);
-	snprintf(&tmp_str[0], 200, " msec \n#SYS_INFO: %s %s\n"HRES_STR" "VRES_STR"\n255\n", sys_info.nodename, sys_info.machine);
-	strncat(&ppm_header[29], tmp_str, 160);
+	snprintf(&ppm_header[0], PPM_Header_Max_Length, "P6\n#TIME_STAMP: %010d sec %010d msec \n#SYS_INFO: %s %s\n"HRES_STR" "VRES_STR"\n255\n", 
+		(int)time->tv_sec, (int)((time->tv_nsec)/1000000), sys_info.nodename, sys_info.machine);
 
 	strncpy(ppm_dumpname, "img/r2/rgbc00000000.ppm", sizeof(ppm_dumpname));
-	
-/*	if((tag % 100) != 0)
-	{
-		strncpy(ppm_dumpname, "img/r2/rgbc00000000.ppm", sizeof(ppm_dumpname));
-	}
-
-	else
-	{
-		strncpy(ppm_dumpname, "img/an/rgbc00000000.ppm", sizeof(ppm_dumpname));
-	}*/
 
 	strncpy(&file_out.header[0], ppm_header, sizeof(ppm_header));
 	file_out.headersize = sizeof(ppm_header);
