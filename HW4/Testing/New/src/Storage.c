@@ -1,13 +1,22 @@
+/*
+*		File: Storage.c
+*		Purpose: The source file containing functions to store all the images on local Flash memory
+*		Owner: Poorn Mehta
+*		Last Modified: 8/11/2019
+*/
+
 #include "main.h"
 #include "Aux_Func.h"
 #include "Cam_Func.h"
 #include "Storage.h"
 
+// Shared Variables
 uint8_t Terminate_Flag;
 uint8_t data_buffer[No_of_Buffers][Big_Buffer_Size];
 strct_analyze Analysis;
 uint32_t Deadline_ms;
 
+// Local Variables
 static store_struct file_in;
 static mqd_t storage_queue;
 static struct timespec curr_time;
@@ -16,9 +25,11 @@ static uint32_t frames, store_index;
 static float Storage_Stamp_1, Storage_Stamp_2;
 static float Storage_Start_Stamp, Storage_End_Stamp;
 
+// Function to setup Storage Queue in Read Only mode
+// Parameter1: void
+// Return: uint8_t result - 0: success
 static uint8_t Storage_Q_Setup(void)
 {
-	// Queue setup
 	struct mq_attr storage_queue_attr;
 	storage_queue_attr.mq_maxmsg = queue_size;
 	storage_queue_attr.mq_msgsize = sizeof(store_struct);
@@ -32,10 +43,11 @@ static uint8_t Storage_Q_Setup(void)
 	return 0;
 }
 
-
+// Function that implements Storage Thread
 void *Storage_Func(void *para_t)
 {
 
+	// Setup
 	if(Storage_Q_Setup() != 0)
 	{
 		syslog(LOG_ERR, "<%.6fms>!!Storage!! Thread Setup Failed", Time_Stamp(Mode_ms));
@@ -49,6 +61,7 @@ void *Storage_Func(void *para_t)
 
 	while(frames < No_of_Frames)
 	{
+		// Set the timeout to 1 second for queue timed receive
 		if(clock_gettime(CLOCK_REALTIME, &curr_time) != 0)
 		{
 			syslog(LOG_ERR, "<%.6fms>!!Storage!! Couldn't get time for curr_time", Time_Stamp(Mode_ms));
@@ -118,17 +131,20 @@ void *Storage_Func(void *para_t)
 
 	Analysis.Jitter_Analysis.Overall_Jitter[Storage_TID] = Storage_End_Stamp - (Storage_Start_Stamp + (No_of_Frames * Deadline_ms));
 
+	// Log the exiting event
+	syslog (LOG_INFO, "<%.6fms>!!Storage!! Exiting...", Time_Stamp(Mode_ms));
+
+	// Close the queue
 	if(mq_close(storage_queue) != 0)
 	{
 		syslog(LOG_ERR, "<%.6fms>!!Storage!! Couldn't close Storage Queue", Time_Stamp(Mode_ms));
 	}
 
+	// Unlink the queue
 	if(mq_unlink(storage_q_name) != 0)
 	{
 		syslog(LOG_ERR, "<%.6fms>!!Storage!! Couldn't unlink Storage Queue", Time_Stamp(Mode_ms));
 	}
-
-	syslog (LOG_INFO, "<%.6fms>!!Storage!! Exiting...", Time_Stamp(Mode_ms));
 
 	pthread_exit(0);
 }

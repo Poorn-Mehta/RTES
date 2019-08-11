@@ -85,7 +85,7 @@
 #define Useless_Frames		(uint32_t)2
 
 // The number of total frames that are to be captured
-#define Frame_to_Capture	(uint32_t)7201
+#define Frame_to_Capture	(uint32_t)3
 
 // The number of frames that are allowed to be stored on local flash (the latest frames will be there in case of Frames_to_Capture > Wrap_around_Frames)
 #define Wrap_around_Frames	(uint32_t)601

@@ -1,9 +1,20 @@
-// Cam_Func.c
+/*
+*		File: Cam_Func.c
+*		Purpose: The source file containing functions to provide V4L2 interface
+*		Owner: Poorn Mehta
+*		Last Modified: 8/11/2019
+*
+*		Most the functions in this source file have been developed with reference to the
+*		code developed by Professor Sam Siewert. The source code can be found in the below link.
+*		http://ecee.colorado.edu/~ecen5623/ecen/ex/Linux/computer-vision/simple-capture/
+*
+*/
 
 #include "main.h"
 #include "Aux_Func.h"
 #include "Cam_Func.h"
 
+// Shared Variables
 char *dev_name;
 int fd;
 struct v4l2_format fmt;
@@ -13,6 +24,7 @@ int force_format;
 uint32_t HRES, VRES;
 strct_analyze Analysis;
 
+// Local Variables
 static float Warmup_Stamp_1, Warmup_Stamp_2;
 static int resp;
 
@@ -22,7 +34,9 @@ static fd_set fds;
 // Structure to store timing values
 static struct timeval tout;
 
-//mmap
+// Function to poll the camera for new frame, and simply discard it
+// Parameter1: void
+// Return: uint8_t result - 0: success
 static uint8_t get_discard_frame(void)
 {
 	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#v4l2-buffer
@@ -76,7 +90,10 @@ static uint8_t get_discard_frame(void)
 	return 0;
 }
 
-
+// Function to warmup the camera by capturing and discarding a few initial frames
+// And to also calculate maximum FPS
+// Parameter1: void
+// Return: uint8_t result - 0: success
 uint8_t device_warmup(void)
 {
 	uint32_t tmp = 0;
@@ -146,6 +163,9 @@ uint8_t device_warmup(void)
 	return 0;
 }
 
+// Function to exit the program on failure
+// Parameter1: const char *s - string to print while exiting
+// Return: void
 void errno_exit(const char *s)
 {
         fprintf(stderr, "%s error %d, %s\n", s, errno, strerror(errno));
@@ -153,6 +173,9 @@ void errno_exit(const char *s)
         exit(EXIT_FAILURE);
 }
 
+// Function to provide a do while wrapper on ioctl
+// Parameters: same as ioctl parameters
+// Return: int result - Non negative integer on success
 int xioctl(int fh, int request, void *arg)
 {
         int r;
@@ -166,6 +189,9 @@ int xioctl(int fh, int request, void *arg)
         return r;
 }
 
+// Function to tell driver using V4L2 to turn off streaming
+// Parameter1: void
+// Return: void
 void stop_capturing(void)
 {
         enum v4l2_buf_type type;
@@ -177,7 +203,9 @@ void stop_capturing(void)
 	}
 }
 
-//mmap
+// Function to configure driver using V4L2 to start streaming in memory mapping mode
+// Parameter1: void
+// Return: void
 void start_capturing(void)
 {
         uint32_t i;
@@ -220,7 +248,9 @@ void start_capturing(void)
 	}
 }
 
-//mmap
+// Function to unmap the previously mapped region on memory
+// Parameter1: void
+// Return: void
 void uninit_device(void)
 {
         uint32_t i;
@@ -236,7 +266,9 @@ void uninit_device(void)
         free(frame_p);
 }
 
-//mmap
+// Function to properly initialize memory mapping
+// Parameter1: void
+// Return: void
 void init_mmap(uint32_t buffer_size)
 {
 	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#v4l2-requestframe_p
@@ -338,6 +370,9 @@ void init_mmap(uint32_t buffer_size)
 	}
 }
 
+// Function to initialize camera and the driver with appropriate settings, using V4L2
+// Parameter1: void
+// Return: void
 void init_device(void)
 {
 	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#v4l2-capability
@@ -508,7 +543,9 @@ void init_device(void)
 	init_mmap(fmt.fmt.pix.sizeimage);
 }
 
-
+// Function to close the file handler of camera
+// Parameter1: void
+// Return: void
 void close_device(void)
 {
         if (-1 == close(fd))
@@ -518,6 +555,9 @@ void close_device(void)
         fd = -1;
 }
 
+// Function to start communicating with camera, and to get a file handler for same
+// Parameter1: void
+// Return: void
 void open_device(void)
 {
 

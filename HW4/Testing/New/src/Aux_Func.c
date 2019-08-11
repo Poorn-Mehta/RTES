@@ -2,7 +2,7 @@
 *		File: Aux_Func.c
 *		Purpose: The source file containing Auxiliary functions related to the functionalities required
 *		Owner: Poorn Mehta
-*		Last Modified: 6/13/2019
+*		Last Modified: 8/11/2019
 */
 
 #include "main.h"
@@ -17,9 +17,13 @@ cpu_set_t CPU_Core;
 strct_analyze Analysis;
 uint32_t Target_FPS, Deadline_ms, Scheduler_Deadline, Monitor_Deadline, sch_index, HRES, VRES;
 
+// Local variables
 static uint32_t i;
 static float sum_1, sum_2, sum_3, sum_4, sum_5, sum_6;
 
+// Function to Select Resolution
+// Parameter1: uint8_t Res_Setting - Defined in header file
+// Return: uint8_t Res_Setting
 uint8_t Select_Resolution(uint8_t Res_Setting)
 {
 	switch(Res_Setting)
@@ -70,16 +74,37 @@ uint8_t Select_Resolution(uint8_t Res_Setting)
 	return Res_Setting;
 }
 
+// Function to Analyze the Data and Display it
+// Parameter1: void
+// Return: void
 void Show_Analysis(void)
 {
 
-	sum_1 = 0;
+	// Calculations for Scheduler
 	sum_4 = 0;
-
 	for(i = 0; i < sch_index; i ++)
 	{
-		Analysis.Jitter_Analysis.Scheduler_Jitter[i] = Analysis.Exec_Analysis.Scheduler_Exec[i] - (float)Scheduler_Deadline;
+		// Logging each value in different syslog for graphs and further statistical analysis
 		syslog (LOG_INFO, "!!Sch_Exec!! %.3f", Analysis.Exec_Analysis.Scheduler_Exec[i]);
+
+		// Summing up for average
+		sum_4 += Analysis.Exec_Analysis.Scheduler_Exec[i];
+
+		// Finding absolute maximum
+		if(Analysis.Exec_Analysis.WCET[Scheduler_TID] <= fabs(Analysis.Exec_Analysis.Scheduler_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[Scheduler_TID] = fabs(Analysis.Exec_Analysis.Scheduler_Exec[i]);
+		}
+	}
+	// Calculating Average
+	Analysis.Exec_Analysis.Avg_Exec[Scheduler_TID] = sum_4 / sch_index;
+
+	sum_1 = 0;
+	for(i = 0; i < sch_index; i ++)
+	{
+		// Jitter is considered as difference between the average and a particular execution time
+		Analysis.Jitter_Analysis.Scheduler_Jitter[i] = Analysis.Exec_Analysis.Scheduler_Exec[i] - Analysis.Exec_Analysis.Avg_Exec[Scheduler_TID];
+
 		syslog (LOG_INFO, "!!Sch_Jitter!! %.3f", Analysis.Jitter_Analysis.Scheduler_Jitter[i]);
 
 		sum_1 += Analysis.Jitter_Analysis.Scheduler_Jitter[i];
@@ -88,34 +113,14 @@ void Show_Analysis(void)
 		{
 			Analysis.Jitter_Analysis.Max_Jitter[Scheduler_TID] = fabs(Analysis.Jitter_Analysis.Scheduler_Jitter[i]);
 		}
-
-		sum_4 += Analysis.Exec_Analysis.Scheduler_Exec[i];
-
-		if(Analysis.Exec_Analysis.WCET[Scheduler_TID] <= fabs(Analysis.Exec_Analysis.Scheduler_Exec[i]))
-		{
-			Analysis.Exec_Analysis.WCET[Scheduler_TID] = fabs(Analysis.Exec_Analysis.Scheduler_Exec[i]);
-		}
 	}
-
 	Analysis.Jitter_Analysis.Avg_Jitter[Scheduler_TID] = sum_1 / sch_index;
 
-	Analysis.Exec_Analysis.Avg_Exec[Scheduler_TID] = sum_4 / sch_index;
-
-	sum_1 = 0;
+	// Calculations for Cam_Monitor
 	sum_4 = 0;
-
 	for(i = 0; i < Monitor_Loop_Count; i ++)
 	{
-		Analysis.Jitter_Analysis.Monitor_Jitter[i] = Analysis.Exec_Analysis.Monitor_Exec[i] - (float)Monitor_Deadline;
-		syslog (LOG_INFO, "!!Mon_Exec!! %.3f", Analysis.Exec_Analysis.Monitor_Exec[i]);
 		syslog (LOG_INFO, "!!Mon_Jitter!! %.3f", Analysis.Jitter_Analysis.Monitor_Jitter[i]);
-
-		sum_1 += Analysis.Jitter_Analysis.Monitor_Jitter[i];
-
-		if(Analysis.Jitter_Analysis.Max_Jitter[Monitor_TID] <= fabs(Analysis.Jitter_Analysis.Monitor_Jitter[i]))
-		{
-			Analysis.Jitter_Analysis.Max_Jitter[Monitor_TID] = fabs(Analysis.Jitter_Analysis.Monitor_Jitter[i]);
-		}
 
 		sum_4 += Analysis.Exec_Analysis.Monitor_Exec[i];
 
@@ -124,22 +129,66 @@ void Show_Analysis(void)
 			Analysis.Exec_Analysis.WCET[Monitor_TID] = fabs(Analysis.Exec_Analysis.Monitor_Exec[i]);
 		}
 	}
+	Analysis.Exec_Analysis.Avg_Exec[Monitor_TID] = sum_4 / Monitor_Loop_Count;
 
+	sum_1 = 0;
+	for(i = 0; i < Monitor_Loop_Count; i ++)
+	{
+		Analysis.Jitter_Analysis.Monitor_Jitter[i] = Analysis.Exec_Analysis.Monitor_Exec[i] - Analysis.Exec_Analysis.Avg_Exec[Monitor_TID];
+		syslog (LOG_INFO, "!!Mon_Jitter!! %.3f", Analysis.Jitter_Analysis.Monitor_Jitter[i]);
+
+		sum_1 += Analysis.Jitter_Analysis.Monitor_Jitter[i];
+
+		if(Analysis.Jitter_Analysis.Max_Jitter[Monitor_TID] <= fabs(Analysis.Jitter_Analysis.Monitor_Jitter[i]))
+		{
+			Analysis.Jitter_Analysis.Max_Jitter[Monitor_TID] = fabs(Analysis.Jitter_Analysis.Monitor_Jitter[i]);
+		}
+	}
 	Analysis.Jitter_Analysis.Avg_Jitter[Monitor_TID] = sum_1 / Monitor_Loop_Count;
 
-	Analysis.Exec_Analysis.Avg_Exec[Monitor_TID] = sum_4 / Monitor_Loop_Count;
+	// Calculations for the rest
+	sum_4 = 0;
+	sum_5 = 0;
+	sum_6 = 0;
+	for(i = 0; i < No_of_Frames; i ++)
+	{
+		syslog (LOG_INFO, "!!Brgt_Exec!! %.3f", Analysis.Exec_Analysis.RGB_Exec[i]);
+
+		sum_4 += Analysis.Exec_Analysis.RGB_Exec[i];
+
+		if(Analysis.Exec_Analysis.WCET[RGB_TID] <= fabs(Analysis.Exec_Analysis.RGB_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[RGB_TID] = fabs(Analysis.Exec_Analysis.RGB_Exec[i]);
+		}
+
+		syslog (LOG_INFO, "!!Store_Exec!! %.3f", Analysis.Exec_Analysis.Storage_Exec[i]);
+
+		sum_5 += Analysis.Exec_Analysis.Storage_Exec[i];
+
+		if(Analysis.Exec_Analysis.WCET[Storage_TID] <= fabs(Analysis.Exec_Analysis.Storage_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[Storage_TID] = fabs(Analysis.Exec_Analysis.Storage_Exec[i]);
+		}
+
+		syslog (LOG_INFO, "!!Sock_Exec!! %.3f", Analysis.Exec_Analysis.Socket_Exec[i]);
+
+		sum_6 += Analysis.Exec_Analysis.Socket_Exec[i];
+
+		if(Analysis.Exec_Analysis.WCET[Socket_TID] <= fabs(Analysis.Exec_Analysis.Socket_Exec[i]))
+		{
+			Analysis.Exec_Analysis.WCET[Socket_TID] = fabs(Analysis.Exec_Analysis.Socket_Exec[i]);
+		}
+	}
+	Analysis.Exec_Analysis.Avg_Exec[RGB_TID] = sum_4 / No_of_Frames;
+	Analysis.Exec_Analysis.Avg_Exec[Storage_TID] = sum_5 / No_of_Frames;
+	Analysis.Exec_Analysis.Avg_Exec[Socket_TID] = sum_6 / No_of_Frames;
 
 	sum_1 = 0;
 	sum_2 = 0;
 	sum_3 = 0;
-	sum_4 = 0;
-	sum_5 = 0;
-	sum_6 = 0;
-
 	for(i = 0; i < No_of_Frames; i ++)
 	{
-		Analysis.Jitter_Analysis.RGB_Jitter[i] = Analysis.Exec_Analysis.RGB_Exec[i] - (float)Deadline_ms;
-		syslog (LOG_INFO, "!!Brgt_Exec!! %.3f", Analysis.Exec_Analysis.RGB_Exec[i]);
+		Analysis.Jitter_Analysis.RGB_Jitter[i] = Analysis.Exec_Analysis.RGB_Exec[i] - Analysis.Exec_Analysis.Avg_Exec[RGB_TID];
 		syslog (LOG_INFO, "!!Brgt_Jitter!! %.3f", Analysis.Jitter_Analysis.RGB_Jitter[i]);
 
 		sum_1 += Analysis.Jitter_Analysis.RGB_Jitter[i];
@@ -149,15 +198,7 @@ void Show_Analysis(void)
 			Analysis.Jitter_Analysis.Max_Jitter[RGB_TID] = fabs(Analysis.Jitter_Analysis.RGB_Jitter[i]);
 		}
 
-		sum_4 += Analysis.Exec_Analysis.RGB_Exec[i];
-
-		if(Analysis.Exec_Analysis.WCET[RGB_TID] <= fabs(Analysis.Exec_Analysis.RGB_Exec[i]))
-		{
-			Analysis.Exec_Analysis.WCET[RGB_TID] = fabs(Analysis.Exec_Analysis.RGB_Exec[i]);
-		}
-
-		Analysis.Jitter_Analysis.Storage_Jitter[i] = Analysis.Exec_Analysis.Storage_Exec[i] - (float)Deadline_ms;
-		syslog (LOG_INFO, "!!Store_Exec!! %.3f", Analysis.Exec_Analysis.Storage_Exec[i]);
+		Analysis.Jitter_Analysis.Storage_Jitter[i] = Analysis.Exec_Analysis.Storage_Exec[i] - Analysis.Exec_Analysis.Avg_Exec[Storage_TID];
 		syslog (LOG_INFO, "!!Store_Jitter!! %.3f", Analysis.Jitter_Analysis.Storage_Jitter[i]);
 
 		sum_2 += Analysis.Jitter_Analysis.Storage_Jitter[i];
@@ -167,15 +208,7 @@ void Show_Analysis(void)
 			Analysis.Jitter_Analysis.Max_Jitter[Storage_TID] = fabs(Analysis.Jitter_Analysis.Storage_Jitter[i]);
 		}
 
-		sum_5 += Analysis.Exec_Analysis.Storage_Exec[i];
-
-		if(Analysis.Exec_Analysis.WCET[Storage_TID] <= fabs(Analysis.Exec_Analysis.Storage_Exec[i]))
-		{
-			Analysis.Exec_Analysis.WCET[Storage_TID] = fabs(Analysis.Exec_Analysis.Storage_Exec[i]);
-		}
-
-		Analysis.Jitter_Analysis.Socket_Jitter[i] = Analysis.Exec_Analysis.Socket_Exec[i] - (float)Deadline_ms;
-		syslog (LOG_INFO, "!!Sock_Exec!! %.3f", Analysis.Exec_Analysis.Socket_Exec[i]);
+		Analysis.Jitter_Analysis.Socket_Jitter[i] = Analysis.Exec_Analysis.Socket_Exec[i] - Analysis.Exec_Analysis.Avg_Exec[Socket_TID];
 		syslog (LOG_INFO, "!!Sock_Jitter!! %.3f", Analysis.Jitter_Analysis.Socket_Jitter[i]);
 
 		sum_3 += Analysis.Jitter_Analysis.Socket_Jitter[i];
@@ -184,23 +217,12 @@ void Show_Analysis(void)
 		{
 			Analysis.Jitter_Analysis.Max_Jitter[Socket_TID] = fabs(Analysis.Jitter_Analysis.Socket_Jitter[i]);
 		}
-
-		sum_6 += Analysis.Exec_Analysis.Socket_Exec[i];
-
-		if(Analysis.Exec_Analysis.WCET[Socket_TID] <= fabs(Analysis.Exec_Analysis.Socket_Exec[i]))
-		{
-			Analysis.Exec_Analysis.WCET[Socket_TID] = fabs(Analysis.Exec_Analysis.Socket_Exec[i]);
-		}
 	}
-
 	Analysis.Jitter_Analysis.Avg_Jitter[RGB_TID] = sum_1 / No_of_Frames;
 	Analysis.Jitter_Analysis.Avg_Jitter[Storage_TID] = sum_2 / No_of_Frames;
 	Analysis.Jitter_Analysis.Avg_Jitter[Socket_TID] = sum_3 / No_of_Frames;
 
-	Analysis.Exec_Analysis.Avg_Exec[RGB_TID] = sum_4 / No_of_Frames;
-	Analysis.Exec_Analysis.Avg_Exec[Storage_TID] = sum_5 / No_of_Frames;
-	Analysis.Exec_Analysis.Avg_Exec[Socket_TID] = sum_6 / No_of_Frames;
-
+	// Printing gathered info
 	printf("\n\n**********Detailed Analysis Below**********\n");
 
 	printf("\n---GREP_INFO---\n");
@@ -251,12 +273,17 @@ void Show_Analysis(void)
 
 }
 
-// Function to return relative timestamps
+// Function to calculate and return relative (to the start of program) timestamp
+// Parameter1: uint8_t mode - defined in header file - selects timestamps in seconds/milliseconds/microseconds
+// Return: float rval - the requested relative timestamp in float
 float Time_Stamp(uint8_t mode)
 {
+	// Local variables
 	struct timespec curr_time = {0, 0};
 	uint32_t multiplier;
 	float inv_multiplier;
+
+	// Choose multipliers according to the requested mode
 	switch(mode)
 	{
 		case Mode_sec:
@@ -293,7 +320,7 @@ float Time_Stamp(uint8_t mode)
 	clock_gettime(CLOCK_REALTIME, &curr_time);
 	float rval = 0;
 
-	// Calculate Difference
+	// Calculate Difference and convert to float
 	if(curr_time.tv_nsec >= start_time.tv_nsec)
 	{
         	rval = ((curr_time.tv_sec - start_time.tv_sec) * multiplier) + (((float)(curr_time.tv_nsec - start_time.tv_nsec)) * inv_multiplier);
@@ -307,7 +334,10 @@ float Time_Stamp(uint8_t mode)
 	return (rval);
 }
 
-// Setup Logger as needed
+// Function to setup logger
+// Parameter1: char *logname - the string which will appear in begging of every log message by this application
+// Parameter2: int level_upto - the log level up to which the messages should be logged. Others are ignored.
+// Return: void
 void Set_Logger(char *logname, int level_upto)
 {
 	// Logmask - the lowest (least important) Log Level to be written
@@ -317,6 +347,9 @@ void Set_Logger(char *logname, int level_upto)
 	openlog(logname, LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
 }
 
+// Function to bind a thread to specific CPU core
+// Parameter1: uint8_t Core - the CPU # to which the thread is to be attached
+// Return: uint8_t error_indicator - 0 for success
 uint8_t Bind_to_CPU(uint8_t Core)
 {
     // Bind thread to given CPU core
@@ -339,7 +372,9 @@ uint8_t Bind_to_CPU(uint8_t Core)
 	return 1;
 }
 
-// Setting up system for realtime operation
+// Function to setup FIFO scheduler
+// Parameter1: void
+// Return: uint8_t error_indicator - 0 for success
 uint8_t Realtime_Setup(void)
 {
 	int sched;

@@ -1,8 +1,22 @@
+/*
+*		File: Cam_Monitor.c
+*		Purpose: The source file containing functions to grab the frame from camera in real time,
+*			 and update a global structure with the latest pointer
+*		Owner: Poorn Mehta
+*		Last Modified: 8/11/2019
+*
+*		A couple of the functions in this source file have been developed with reference to the
+*		code developed by Professor Sam Siewert. The source code can be found in the below link.
+*		http://ecee.colorado.edu/~ecen5623/ecen/ex/Linux/computer-vision/simple-capture/
+*
+*/
+
 #include "main.h"
 #include "Aux_Func.h"
 #include "Cam_Func.h"
 #include "Cam_Monitor.h"
 
+// Shared Variables
 int fd;
 uint32_t n_buffers;
 uint32_t HRES, VRES, Monitor_Deadline;
@@ -13,6 +27,7 @@ frame_p_buffer shared_struct;
 sem_t Monitor_Sem;
 float Monitor_Start_Stamp, Monitor_Stamp_1;
 
+// Local Variables
 static float Monitor_End_Stamp, Monitor_Stamp_2;
 static uint32_t mon_index;
 static int resp;
@@ -23,7 +38,11 @@ static fd_set fds;
 // Structure to store timing values
 static struct timeval tout;
 
-//mmap
+// This function was originally written by Professor Sam Siewert, as per mentioned at the top of this file
+// Function to poll the camera for new frame,
+// and if it is available, then update the pointer in global structure
+// Parameter1: void
+// Return: uint8_t result - 0: success
 uint8_t read_frame(void)
 {
 	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#v4l2-buffer
@@ -66,6 +85,7 @@ uint8_t read_frame(void)
 
 	assert(buf.index < n_buffers);
 
+	// Update pointer
 	shared_struct.start = (void *)frame_p[buf.index].start;
 	shared_struct.length = buf.bytesused;
 
@@ -80,24 +100,28 @@ uint8_t read_frame(void)
 	return 0;
 }
 
-// Following function implements writer Thread
+// Function that implements Cam_Monitor Thread
 void *Cam_Monitor_Func(void *para_t)
 {
 
+	// Setup
 	mon_index = 0;
 	syslog(LOG_INFO, "<%.6fms>!!Cam_Monitor!! Thread Setup Completed on Core: %d", Time_Stamp(Mode_ms), sched_getcpu());
 
 	while(1)
 	{
 
+		// Wait for semaphore (from scheduler)
 		if(sem_wait(&Monitor_Sem) != 0)
 		{
 			syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! Couldn't wait on Monitor_Sem", Time_Stamp(Mode_ms));
 			continue;
 		}
 
+		// For Rate Monotonic Analysis
 		syslog(LOG_INFO, "<%.6fms>!!RMA!! Cam_Monitor Launched (Iteration: %d)", Time_Stamp(Mode_ms), mon_index);
 		
+		// Check if scheduler has raised this flag to terminate real time services
 		if(Terminate_Flag != 0)
 		{
 			break;
@@ -109,8 +133,7 @@ void *Cam_Monitor_Func(void *para_t)
 		// Store file descriptor of camera in the set
 		FD_SET(fd, &fds);
 
-		// Set timeout of communication with Camera to 25 ms
-
+		// Set 0 timeout for instant operation
 		tout.tv_sec = 0;
 		tout.tv_usec = 0;
 
@@ -147,6 +170,7 @@ void *Cam_Monitor_Func(void *para_t)
 
 		Analysis.Exec_Analysis.Monitor_Exec[mon_index] = Monitor_Stamp_2 - Monitor_Stamp_1;
 
+		// For Rate Monotonic Analysis
 		syslog(LOG_INFO, "<%.6fms>!!RMA!! Cam_Monitor Completed (Iteration: %d)", Time_Stamp(Mode_ms), mon_index);
 
 		mon_index += 1;
