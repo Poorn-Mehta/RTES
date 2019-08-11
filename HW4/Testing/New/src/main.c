@@ -7,12 +7,20 @@
 */
 
 #include "main.h"
+#include "Aux_Func.h"
+#include "Cam_Func.h"
+#include "Cam_Filter.h"
+#include "Socket.h"
+#include "Cam_RGB.h"
+#include "Cam_Monitor.h"
+#include "Scheduler.h"
+#include "Storage.h"
 
 // To record start time
 struct timespec start_time = {0, 0};
 
 // Thread handles
-pthread_t Scheduler_Thread, Cam_Brightness_Thread, Cam_Monitor_Thread, Storage_Thread, Socket_Thread;
+pthread_t Scheduler_Thread, Cam_RGB_Thread, Cam_Monitor_Thread, Storage_Thread, Socket_Thread;
 
 // Thread attribute variable
 pthread_attr_t Attr_All;
@@ -47,7 +55,7 @@ uint8_t Complete_Var = 0;
 
 float ref_time;
 	
-sem_t Brightness_Sem, Monitor_Sem;
+sem_t RGB_Sem, Monitor_Sem;
 
 frame_p_buffer shared_struct;
 
@@ -69,7 +77,7 @@ uint32_t Deadline_ms = 1000;
 uint32_t Scheduler_Deadline = 10;
 uint32_t Monitor_Deadline = 100;
 
-float Monitor_Start_Stamp, Monitor_Stamp_1, Brightness_Start_Stamp, Brightness_Stamp_1;
+float Monitor_Start_Stamp, Monitor_Stamp_1, RGB_Start_Stamp, RGB_Stamp_1;
 
 int main (int argc, char *argv[])
 {
@@ -216,7 +224,6 @@ int main (int argc, char *argv[])
 
 	Monitor_Deadline = Deadline_ms / Monitor_Scaling_Factor;
 
-	uint32_t i;
 	// Record program start time, to provide relative time throughout the execution
 	clock_gettime(CLOCK_REALTIME, &start_time);
 
@@ -228,7 +235,7 @@ int main (int argc, char *argv[])
 
 	dev_name = "/dev/video0";
 
-	res = 2;
+	res = Select_Resolution(Res_640_480);
 
 	CLEAR(Analysis);
 
@@ -246,140 +253,91 @@ int main (int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if(sem_init(&Monitor_Sem, 0, 0) != 0)
+	{
+	    syslog(LOG_ERR, "Failed to initialize Monitor_Sem semaphore");
+	    exit(-1);
+	}
 
-	for(i = 0; i < Iterations; i ++)
-	{			
+	if(sem_init(&RGB_Sem, 0, 0) != 0)
+	{
+	    syslog(LOG_ERR, "Failed to initialize RGB_Sem semaphore");
+	    exit(-1);
+	}
 
-		switch(res)
-		{
-			case 0:
-			{
-				HRES = 960;
-				VRES = 720;
-				break;
-			}
-			
-			case 1:
-			{
-				HRES = 800;
-				VRES = 600;
-				break;
-			}
+	printf("\n\n*** Started on Resolution: %d*%d ***\n", HRES, VRES);
 
-			case 2:
-			{
-				HRES = 640;
-				VRES = 480;
-				break;
-			}
+	open_device();
+	init_device();
+	start_capturing();
 
-			case 3:
-			{
-				HRES = 320;
-				VRES = 240;
-				break;
-			}
+	if(device_warmup() == 0)
+	{
+		syslog(LOG_INFO, "<%.6fms>!!Cam_Monitor!! Device Warmup Successful", Time_Stamp(Mode_ms));
+	}
 
-			case 4:
-			{
-				HRES = 160;
-				VRES = 120;
-				break;
-			}
+	else
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! Device Warmup Failed", Time_Stamp(Mode_ms));
+	}
 
-			default:
-			{
-				break;
-			}
-		}
+	usleep(10000);
 
-		if(sem_init(&Monitor_Sem, 0, 0) != 0)
-		{
-		    syslog(LOG_ERR, "Failed to initialize Monitor_Sem semaphore");
-		    exit(-1);
-		}
-
-		if(sem_init(&Brightness_Sem, 0, 0) != 0)
-		{
-		    syslog(LOG_ERR, "Failed to initialize Brightness_Sem semaphore");
-		    exit(-1);
-		}
-
-		printf("\n\n*** Started on Resolution: %d*%d ***\n", HRES, VRES);
-
-		open_device();
-		init_device();
-		start_capturing();
-
-		if(device_warmup() == 0)
-		{
-			syslog(LOG_INFO, "<%.6fms>!!Cam_Monitor!! Device Warmup Successful", Time_Stamp(Mode_ms));
-		}
-
-		else
-		{
-			syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! Device Warmup Failed", Time_Stamp(Mode_ms));
-		}
-
+	if((Operating_Mode & Mode_FPS_Mask) == Mode_1_FPS_Val)
+	{
+		Cam_Filter();
 		usleep(10000);
+	}
 
-		if((Operating_Mode & Mode_FPS_Mask) == Mode_1_FPS_Val)
-		{
-			Cam_Filter();
-			usleep(10000);
-		}
+	Bind_to_CPU(3);
+	Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
+	pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
+	pthread_create(&Scheduler_Thread, &Attr_All, Scheduler_Func, (void *)0);
 
-		Bind_to_CPU(3);
+	Bind_to_CPU(3);
+	Attr_Sch.sched_priority = FIFO_Max_Prio - 2;
+	pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
+	pthread_create(&Cam_Monitor_Thread, &Attr_All, Cam_Monitor_Func, (void *)0);
+
+	Bind_to_CPU(3);
+	Attr_Sch.sched_priority = FIFO_Max_Prio - 3;
+	pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
+	pthread_create(&Cam_RGB_Thread, &Attr_All, Cam_RGB_Func, (void *)0);
+
+	Bind_to_CPU(2);
+	Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
+	pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
+	pthread_create(&Storage_Thread, &Attr_All, Storage_Func, (void *)0);
+
+	if((Operating_Mode & Mode_Socket_Mask) == Mode_Socket_ON_Val)
+	{
+		Bind_to_CPU(1);
 		Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
 		pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
-		pthread_create(&Scheduler_Thread, &Attr_All, Scheduler_Func, (void *)0);
+		pthread_create(&Socket_Thread, &Attr_All, Socket_Func, (void *)0);
+	}
 
-		Bind_to_CPU(3);
-		Attr_Sch.sched_priority = FIFO_Max_Prio - 2;
-		pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
-		pthread_create(&Cam_Monitor_Thread, &Attr_All, Cam_Monitor_Func, (void *)0);
+	pthread_join(Cam_Monitor_Thread, 0); 
+	pthread_join(Cam_RGB_Thread, 0);
+	pthread_join(Scheduler_Thread, 0); 
+	pthread_join(Storage_Thread, 0);
 
-		Bind_to_CPU(3);
-		Attr_Sch.sched_priority = FIFO_Max_Prio - 3;
-		pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
-		pthread_create(&Cam_Brightness_Thread, &Attr_All, Cam_Brightness_Func, (void *)0);
+	if((Operating_Mode & Mode_Socket_Mask) == Mode_Socket_ON_Val)
+	{
+		pthread_join(Socket_Thread, 0);
+	}
 
-		Bind_to_CPU(2);
-		Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
-		pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
-		pthread_create(&Storage_Thread, &Attr_All, Storage_Func, (void *)0);
-
-		if((Operating_Mode & Mode_Socket_Mask) == Mode_Socket_ON_Val)
-		{
-			Bind_to_CPU(1);
-			Attr_Sch.sched_priority = FIFO_Max_Prio - 1;
-			pthread_attr_setschedparam(&Attr_All, &Attr_Sch);
-			pthread_create(&Socket_Thread, &Attr_All, Socket_Func, (void *)0);
-		}
-
-		pthread_join(Cam_Monitor_Thread, 0); 
-		pthread_join(Cam_Brightness_Thread, 0);
-		pthread_join(Scheduler_Thread, 0); 
-		pthread_join(Storage_Thread, 0);
-
-		if((Operating_Mode & Mode_Socket_Mask) == Mode_Socket_ON_Val)
-		{
-			pthread_join(Socket_Thread, 0);
-		}
-
-		stop_capturing();
-		uninit_device();
-		close_device();
+	stop_capturing();
+	uninit_device();
+	close_device();
 
 
-		fprintf(stderr, "\n");
+	fprintf(stderr, "\n");
 
-		printf("\n*** Ended on Resolution: %d*%d ***\n\n", HRES, VRES);
+	printf("\n*** Ended on Resolution: %d*%d ***\n\n", HRES, VRES);
 
-		sem_destroy(&Brightness_Sem);
-		sem_destroy(&Monitor_Sem);
-
-	} 
+	sem_destroy(&RGB_Sem);
+	sem_destroy(&Monitor_Sem);
 
 	syslog (LOG_INFO, ">>>>>>>>>> Program End <<<<<<<<<<");
 

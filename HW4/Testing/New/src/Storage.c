@@ -1,10 +1,12 @@
-
 #include "main.h"
+#include "Aux_Func.h"
+#include "Cam_Func.h"
+#include "Storage.h"
 
-extern uint8_t Terminate_Flag;
-extern uint8_t data_buffer[No_of_Buffers][Big_Buffer_Size];
-extern strct_analyze Analysis;
-extern uint32_t Deadline_ms;
+uint8_t Terminate_Flag;
+uint8_t data_buffer[No_of_Buffers][Big_Buffer_Size];
+strct_analyze Analysis;
+uint32_t Deadline_ms;
 
 static store_struct file_in;
 static mqd_t storage_queue;
@@ -16,7 +18,7 @@ static float Storage_Start_Stamp, Storage_End_Stamp;
 
 static uint8_t Storage_Q_Setup(void)
 {
-    // Queue setup
+	// Queue setup
 	struct mq_attr storage_queue_attr;
 	storage_queue_attr.mq_maxmsg = queue_size;
 	storage_queue_attr.mq_msgsize = sizeof(store_struct);
@@ -47,7 +49,11 @@ void *Storage_Func(void *para_t)
 
 	while(frames < No_of_Frames)
 	{
-		clock_gettime(CLOCK_REALTIME, &curr_time);
+		if(clock_gettime(CLOCK_REALTIME, &curr_time) != 0)
+		{
+			syslog(LOG_ERR, "<%.6fms>!!Storage!! Couldn't get time for curr_time", Time_Stamp(Mode_ms));
+		}
+
 		curr_time.tv_sec += 1;
 
 		q_recv_resp = mq_timedreceive(storage_queue, (char *)&file_in, sizeof(store_struct), 0, &curr_time);
@@ -72,6 +78,11 @@ void *Storage_Func(void *para_t)
 			// Create the file
 			dumpfd = open(&file_in.filename[0], O_WRONLY | O_CREAT, 00666);
 
+			if(dumpfd == -1)
+			{
+				syslog(LOG_ERR, "<%.6fms>!!Storage!! Couldn't open file for storing image", Time_Stamp(Mode_ms));
+			}
+
 			// Write header in file
 			written_bytes = write(dumpfd, &file_in.header[0], file_in.headersize);
 
@@ -85,7 +96,10 @@ void *Storage_Func(void *para_t)
 			} while(total_bytes < file_in.filesize);
 
 			// Close file
-			close(dumpfd);
+			if(close(dumpfd) != 0)
+			{
+				syslog(LOG_ERR, "<%.6fms>!!Storage!! Couldn't close File Descriptor dumpfd", Time_Stamp(Mode_ms));
+			}
 
 			syslog(LOG_INFO, "<%.6fms>!!Storage!! Successfully Stored Frame: %d", Time_Stamp(Mode_ms), frames);
 
@@ -104,8 +118,15 @@ void *Storage_Func(void *para_t)
 
 	Analysis.Jitter_Analysis.Overall_Jitter[Storage_TID] = Storage_End_Stamp - (Storage_Start_Stamp + (No_of_Frames * Deadline_ms));
 
-	mq_close(storage_queue);
-	mq_unlink(storage_q_name);
+	if(mq_close(storage_queue) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Storage!! Couldn't close Storage Queue", Time_Stamp(Mode_ms));
+	}
+
+	if(mq_unlink(storage_q_name) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Storage!! Couldn't unlink Storage Queue", Time_Stamp(Mode_ms));
+	}
 
 	syslog (LOG_INFO, "<%.6fms>!!Storage!! Exiting...", Time_Stamp(Mode_ms));
 

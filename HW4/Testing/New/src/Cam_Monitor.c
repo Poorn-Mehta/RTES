@@ -1,30 +1,27 @@
-// Cam_Monitor.c
-
-/*
-*		File: Writer_Thread.c
-*		Purpose: The source file containing implementation of writer thread for demonstrating timed Mutex Locks
-*		Owner: Poorn Mehta
-*		Last Modified: 7/5/2019
-*/
-
 #include "main.h"
+#include "Aux_Func.h"
+#include "Cam_Func.h"
+#include "Cam_Monitor.h"
 
-extern int fd;
-extern uint32_t n_buffers;
-extern uint8_t Max_Throughput;
-extern uint32_t HRES, VRES, Monitor_Deadline;
-extern uint8_t Terminate_Flag;
-extern frame_p_buffer *frame_p;
-extern strct_analyze Analysis;
-extern frame_p_buffer shared_struct;
-extern sem_t Monitor_Sem;
-extern float Monitor_Start_Stamp, Monitor_Stamp_1;
+int fd;
+uint32_t n_buffers;
+uint32_t HRES, VRES, Monitor_Deadline;
+uint8_t Terminate_Flag;
+frame_p_buffer *frame_p;
+strct_analyze Analysis;
+frame_p_buffer shared_struct;
+sem_t Monitor_Sem;
+float Monitor_Start_Stamp, Monitor_Stamp_1;
 
-static uint8_t warm = 1;
-static float Warmup_Stamp_1, Warmup_Stamp_2;
-static float Monitor_Stamp_2;
+static float Monitor_End_Stamp, Monitor_Stamp_2;
 static uint32_t mon_index;
-static float Monitor_End_Stamp;
+static int resp;
+
+// Declare set to use with FD_macros
+static fd_set fds;
+
+// Structure to store timing values
+static struct timeval tout;
 
 //mmap
 uint8_t read_frame(void)
@@ -69,11 +66,8 @@ uint8_t read_frame(void)
 
 	assert(buf.index < n_buffers);
 
-	if(warm == 0)
-	{
-		shared_struct.start = (void *) frame_p[buf.index].start;
-		shared_struct.length = buf.bytesused;
-	}
+	shared_struct.start = (void *)frame_p[buf.index].start;
+	shared_struct.length = buf.bytesused;
 
 	// Enqueue back the empty buffer to driver's incoming queue
 	if(-1 == xioctl(fd, VIDIOC_QBUF, &buf))
@@ -86,119 +80,28 @@ uint8_t read_frame(void)
 	return 0;
 }
 
-
-uint8_t device_warmup(void)
-{
-	// Declare set to use with FD_macros
-	fd_set fds;
-
-	// Structure to store timing values
-	struct timeval tv;
-
-	int r;
-
-	uint32_t tmp = 0;
-
-	warm = 1;
-
-	Warmup_Stamp_1 = Time_Stamp(Mode_ms);
-
-	while(tmp < Warmup_Frames)
-	{
-
-		// Clear the set
-		FD_ZERO(&fds);
-
-		// Store file descriptor of camera in the set
-		FD_SET(fd, &fds);
-
-		// Set timeout of communication with Camera to 2 seconds
-		tv.tv_sec = 2;
-		tv.tv_usec = 0;
-
-		// http://man7.org/linux/man-pages/man2/select.2.html
-		// Select() blockingly monitors given file descriptors for their availibity for I/O operations
-		// First parameter: nfds should be set to the highest-numbered file descriptor in any of the three sets, plus 1
-		// Second parameter: file drscriptor set that should be monitored for read() availability
-		// Third parameter: file drscriptor set that should be monitored for write() availability
-		// Fourth parameter: file drscriptor set that should be monitored for exceptions
-		// Fifth parameter: to specify time out for select()
-		r = select(fd + 1, &fds, NULL, NULL, &tv);
-
-		// Error handling
-		if(-1 == r)
-		{
-			// If a signal made select() to return, then skip rest of the loop code, and start again
-			if(EINTR == errno)
-			{
-				return 1;
-			}
-
-			syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! Select() Error", Time_Stamp(Mode_ms));
-
-			errno_exit("select");
-		}
-
-		// 0 return means that no file descriptor made the select() to close
-		if(0 == r)
-		{
-
-			syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! Select() Timedout", Time_Stamp(Mode_ms));
-
-			errno_exit("select timeout");
-		}
-
-		// If select() indicated that device is ready for reading from it, then grab a frame
-		if(read_frame() != 0)
-		{
-			Analysis.Max_FPS = 0;
-			return 1;
-		}
-
-		tmp += 1;
-
-	}
-
-	Warmup_Stamp_2 = Time_Stamp(Mode_ms);
-
-	Analysis.Max_FPS = (Warmup_Frames * (float)1000) / (Warmup_Stamp_2 - Warmup_Stamp_1);
-
-	warm = 0;
-
-	return 0;
-}
-
 // Following function implements writer Thread
 void *Cam_Monitor_Func(void *para_t)
 {
 
 	mon_index = 0;
-	syslog (LOG_INFO, "<%.6fms>!!Cam_Monitor!! Thread Setup Completed on Core: %d", Time_Stamp(Mode_ms), sched_getcpu());
+	syslog(LOG_INFO, "<%.6fms>!!Cam_Monitor!! Thread Setup Completed on Core: %d", Time_Stamp(Mode_ms), sched_getcpu());
 
 	while(1)
 	{
 
-		sem_wait(&Monitor_Sem);
-
-/*		if(mon_index == 0)
+		if(sem_wait(&Monitor_Sem) != 0)
 		{
-			Monitor_Start_Stamp = Time_Stamp(Mode_ms);
+			syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! Couldn't wait on Monitor_Sem", Time_Stamp(Mode_ms));
+			continue;
 		}
 
-		Monitor_Stamp_1 = Time_Stamp(Mode_ms);*/
+		syslog(LOG_INFO, "<%.6fms>!!RMA!! Cam_Monitor Launched (Iteration: %d)", Time_Stamp(Mode_ms), mon_index);
 		
 		if(Terminate_Flag != 0)
 		{
 			break;
 		}
-
-		// Declare set to use with FD_macros
-		fd_set fds;
-
-		// Structure to store timing values
-		struct timeval tv;
-
-		int r;
 
 		// Clear the set
 		FD_ZERO(&fds);
@@ -208,8 +111,8 @@ void *Cam_Monitor_Func(void *para_t)
 
 		// Set timeout of communication with Camera to 25 ms
 
-		tv.tv_sec = 0;
-		tv.tv_usec = 0;
+		tout.tv_sec = 0;
+		tout.tv_usec = 0;
 
 		// http://man7.org/linux/man-pages/man2/select.2.html
 		// Select() blockingly monitors given file descriptors for their availibity for I/O operations
@@ -218,10 +121,10 @@ void *Cam_Monitor_Func(void *para_t)
 		// Third parameter: file drscriptor set that should be monitored for write() availability
 		// Fourth parameter: file drscriptor set that should be monitored for exceptions
 		// Fifth parameter: to specify time out for select()
-		r = select(fd + 1, &fds, NULL, NULL, &tv);
+		resp = select(fd + 1, &fds, NULL, NULL, &tout);
 
 		// Error handling
-		if(-1 == r)
+		if(resp == -1)
 		{
 			// If a signal made select() to return, then skip rest of the loop code, and start again
 			if(EINTR == errno)
@@ -229,26 +132,22 @@ void *Cam_Monitor_Func(void *para_t)
 				continue;
 			}
 
-			syslog (LOG_ERR, "<%.6fms>!!Cam_Monitor!! Select() Error", Time_Stamp(Mode_ms));
+			syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! Select() Error", Time_Stamp(Mode_ms));
 
 			errno_exit("select");
 		}
 
-		// 0 return means that no file descriptor made the select() to close
-		if(0 == r)
-		{
-			continue;
-		}
-
 		// If select() indicated that device is ready for reading from it, then grab a frame
-		if(read_frame() != 0)
+		else if(read_frame() != 0)
 		{
-			syslog (LOG_ERR, "<%.6fms>!!Cam_Monitor!! Read_Frame() Error", Time_Stamp(Mode_ms));
+			syslog(LOG_ERR, "<%.6fms>!!Cam_Monitor!! read_frame() Error", Time_Stamp(Mode_ms));
 		}
 
 		Monitor_Stamp_2 = Time_Stamp(Mode_ms);
 
 		Analysis.Exec_Analysis.Monitor_Exec[mon_index] = Monitor_Stamp_2 - Monitor_Stamp_1;
+
+		syslog(LOG_INFO, "<%.6fms>!!RMA!! Cam_Monitor Completed (Iteration: %d)", Time_Stamp(Mode_ms), mon_index);
 
 		mon_index += 1;
 	}

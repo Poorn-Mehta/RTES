@@ -1,8 +1,11 @@
 #include "main.h"
+#include "Aux_Func.h"
+#include "Cam_Func.h"
+#include "Socket.h"
 
-extern char target_ip[20];
-extern strct_analyze Analysis;
-extern uint32_t Deadline_ms;
+char target_ip[20];
+strct_analyze Analysis;
+uint32_t Deadline_ms;
 
 static store_struct file_in;
 static uint8_t frame_data[Big_Buffer_Size];
@@ -73,7 +76,7 @@ static uint8_t Socket_Init(void)
 
 	client.sin_family = AF_INET;
 
-	if(inet_pton(AF_INET, target_ip, &client.sin_addr)<=0)
+	if(inet_pton(AF_INET, target_ip, &client.sin_addr) <= 0)
 	{
 		syslog(LOG_ERR, "<%.6fms>!!Socket!! *EVENT* Error in IP Address", Time_Stamp(Mode_ms));
 		return 1;
@@ -113,7 +116,11 @@ void *Socket_Func(void *para_t)
 
 	while(frames < No_of_Frames)
 	{
-		clock_gettime(CLOCK_REALTIME, &curr_time);
+		if(clock_gettime(CLOCK_REALTIME, &curr_time) != 0)
+		{
+			syslog(LOG_ERR, "<%.6fms>!!Cam_RGB!! Couldn't get time for curr_time", Time_Stamp(Mode_ms));
+		}
+
 		curr_time.tv_sec += 1;
 
 		q_recv_resp = mq_timedreceive(socket_queue, (char *)&file_in, sizeof(store_struct), 0, &curr_time);
@@ -176,10 +183,16 @@ void *Socket_Func(void *para_t)
 
 				if(frame_confirm == frames)
 				{
-					syslog(LOG_INFO, "<%.6fms>!!Socket!! Successfully Sent Frame: %d", Time_Stamp(Mode_ms), frames);
+					syslog(LOG_INFO, "<%.6fms>!!Socket!! Successfully Sent Frame Over Network: %d", Time_Stamp(Mode_ms), frames);
 					frames += 1;
 					break;
 				}
+			}
+
+			if(Frame_Attempt == Frame_Socket_Max_Retries)
+			{
+				syslog(LOG_ERR, "<%.6fms>!!Socket!! Failed to Send Frame over Network: %d", Time_Stamp(Mode_ms), frames);
+				frames += 1;
 			}
 
 			Socket_Stamp_2 = Time_Stamp(Mode_ms);
@@ -196,8 +209,21 @@ void *Socket_Func(void *para_t)
 	Analysis.Jitter_Analysis.Overall_Jitter[Socket_TID] = Socket_End_Stamp - (Socket_Start_Stamp + (No_of_Frames * Deadline_ms));
 
 	syslog (LOG_INFO, "<%.6fms>!!Socket!! Exiting...", Time_Stamp(Mode_ms));
-	mq_close(socket_queue);
-	mq_unlink(socket_q_name);
-	close(new_socket);
+
+	if(mq_close(socket_queue) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Socket!! Couldn't close Socket Queue", Time_Stamp(Mode_ms));
+	}
+
+	if(mq_unlink(socket_q_name) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Socket!! Couldn't unlink Socket Queue", Time_Stamp(Mode_ms));
+	}
+
+	if(close(new_socket) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Socket!! Couldn't close File Descriptor new_socket", Time_Stamp(Mode_ms));
+	}
+
 	return 0;
 }

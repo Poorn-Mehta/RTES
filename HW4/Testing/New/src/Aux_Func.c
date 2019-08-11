@@ -6,18 +6,69 @@
 */
 
 #include "main.h"
+#include "Aux_Func.h"
 
 // Shared variables
-extern struct timespec start_time;
-extern pthread_attr_t Attr_All;
-extern struct sched_param Attr_Sch;
-extern uint8_t FIFO_Max_Prio, FIFO_Min_Prio;
-extern cpu_set_t CPU_Core;
-extern strct_analyze Analysis;
-extern uint32_t Target_FPS, Deadline_ms, Scheduler_Deadline, Monitor_Deadline, sch_index;
+struct timespec start_time;
+pthread_attr_t Attr_All;
+struct sched_param Attr_Sch;
+uint8_t FIFO_Max_Prio, FIFO_Min_Prio;
+cpu_set_t CPU_Core;
+strct_analyze Analysis;
+uint32_t Target_FPS, Deadline_ms, Scheduler_Deadline, Monitor_Deadline, sch_index, HRES, VRES;
 
 static uint32_t i;
 static float sum_1, sum_2, sum_3, sum_4, sum_5, sum_6;
+
+uint8_t Select_Resolution(uint8_t Res_Setting)
+{
+	switch(Res_Setting)
+	{
+		case Res_960_720:
+		{
+			HRES = 960;
+			VRES = 720;
+			break;
+		}
+		
+		case Res_800_600:
+		{
+			HRES = 800;
+			VRES = 600;
+			break;
+		}
+
+		case Res_640_480:
+		{
+			HRES = 640;
+			VRES = 480;
+			break;
+		}
+
+		case Res_320_240:
+		{
+			HRES = 320;
+			VRES = 240;
+			break;
+		}
+
+		case Res_160_120:
+		{
+			HRES = 160;
+			VRES = 120;
+			break;
+		}
+
+		default:
+		{
+			HRES = 640;
+			VRES = 480;
+			break;
+		}
+	}
+
+	return Res_Setting;
+}
 
 void Show_Analysis(void)
 {
@@ -87,22 +138,22 @@ void Show_Analysis(void)
 
 	for(i = 0; i < No_of_Frames; i ++)
 	{
-		Analysis.Jitter_Analysis.Brightness_Jitter[i] = Analysis.Exec_Analysis.Brightness_Exec[i] - (float)Deadline_ms;
-		syslog (LOG_INFO, "!!Brgt_Exec!! %.3f", Analysis.Exec_Analysis.Brightness_Exec[i]);
-		syslog (LOG_INFO, "!!Brgt_Jitter!! %.3f", Analysis.Jitter_Analysis.Brightness_Jitter[i]);
+		Analysis.Jitter_Analysis.RGB_Jitter[i] = Analysis.Exec_Analysis.RGB_Exec[i] - (float)Deadline_ms;
+		syslog (LOG_INFO, "!!Brgt_Exec!! %.3f", Analysis.Exec_Analysis.RGB_Exec[i]);
+		syslog (LOG_INFO, "!!Brgt_Jitter!! %.3f", Analysis.Jitter_Analysis.RGB_Jitter[i]);
 
-		sum_1 += Analysis.Jitter_Analysis.Brightness_Jitter[i];
+		sum_1 += Analysis.Jitter_Analysis.RGB_Jitter[i];
 
-		if(Analysis.Jitter_Analysis.Max_Jitter[Brightness_TID] <= fabs(Analysis.Jitter_Analysis.Brightness_Jitter[i]))
+		if(Analysis.Jitter_Analysis.Max_Jitter[RGB_TID] <= fabs(Analysis.Jitter_Analysis.RGB_Jitter[i]))
 		{
-			Analysis.Jitter_Analysis.Max_Jitter[Brightness_TID] = fabs(Analysis.Jitter_Analysis.Brightness_Jitter[i]);
+			Analysis.Jitter_Analysis.Max_Jitter[RGB_TID] = fabs(Analysis.Jitter_Analysis.RGB_Jitter[i]);
 		}
 
-		sum_4 += Analysis.Exec_Analysis.Brightness_Exec[i];
+		sum_4 += Analysis.Exec_Analysis.RGB_Exec[i];
 
-		if(Analysis.Exec_Analysis.WCET[Brightness_TID] <= fabs(Analysis.Exec_Analysis.Brightness_Exec[i]))
+		if(Analysis.Exec_Analysis.WCET[RGB_TID] <= fabs(Analysis.Exec_Analysis.RGB_Exec[i]))
 		{
-			Analysis.Exec_Analysis.WCET[Brightness_TID] = fabs(Analysis.Exec_Analysis.Brightness_Exec[i]);
+			Analysis.Exec_Analysis.WCET[RGB_TID] = fabs(Analysis.Exec_Analysis.RGB_Exec[i]);
 		}
 
 		Analysis.Jitter_Analysis.Storage_Jitter[i] = Analysis.Exec_Analysis.Storage_Exec[i] - (float)Deadline_ms;
@@ -142,11 +193,11 @@ void Show_Analysis(void)
 		}
 	}
 
-	Analysis.Jitter_Analysis.Avg_Jitter[Brightness_TID] = sum_1 / No_of_Frames;
+	Analysis.Jitter_Analysis.Avg_Jitter[RGB_TID] = sum_1 / No_of_Frames;
 	Analysis.Jitter_Analysis.Avg_Jitter[Storage_TID] = sum_2 / No_of_Frames;
 	Analysis.Jitter_Analysis.Avg_Jitter[Socket_TID] = sum_3 / No_of_Frames;
 
-	Analysis.Exec_Analysis.Avg_Exec[Brightness_TID] = sum_4 / No_of_Frames;
+	Analysis.Exec_Analysis.Avg_Exec[RGB_TID] = sum_4 / No_of_Frames;
 	Analysis.Exec_Analysis.Avg_Exec[Storage_TID] = sum_5 / No_of_Frames;
 	Analysis.Exec_Analysis.Avg_Exec[Socket_TID] = sum_6 / No_of_Frames;
 
@@ -167,8 +218,8 @@ void Show_Analysis(void)
 	printf("\n\nAverage Execution Time of Monitor: %.3fms (Deadline: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[Monitor_TID], (float)Monitor_Deadline);
 	printf("\nWorst Case Execution Time of Monitor: %.3fms", Analysis.Exec_Analysis.WCET[Monitor_TID]);
 
-	printf("\n\nAverage Execution Time of Brightness: %.3fms (Deadline: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[Brightness_TID], (float)Deadline_ms);
-	printf("\nWorst Case Execution Time of Brightness: %.3fms", Analysis.Exec_Analysis.WCET[Brightness_TID]);
+	printf("\n\nAverage Execution Time of RGB: %.3fms (Deadline: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[RGB_TID], (float)Deadline_ms);
+	printf("\nWorst Case Execution Time of RGB: %.3fms", Analysis.Exec_Analysis.WCET[RGB_TID]);
 
 	printf("\n\nAverage Execution Time of Storage: %.3fms (Goal: %.3fms)", Analysis.Exec_Analysis.Avg_Exec[Storage_TID], (float)Deadline_ms);
 	printf("\nWorst Case Execution Time of Storage: %.3fms", Analysis.Exec_Analysis.WCET[Storage_TID]);
@@ -184,9 +235,9 @@ void Show_Analysis(void)
 	printf("\nAverage Jitter of Monitor: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[Monitor_TID]);
 	printf("\nMaximum (Absolute) Jitter of Monitor: %.3fms", Analysis.Jitter_Analysis.Max_Jitter[Monitor_TID]);
 
-	printf("\n\nOverall Jitter/Deviation of Brightness: %.3fms", Analysis.Jitter_Analysis.Overall_Jitter[Brightness_TID]);
-	printf("\nAverage Jitter of Brightness: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[Brightness_TID]);
-	printf("\nMaximum (Absolute) Jitter of Brightness: %.3fms", Analysis.Jitter_Analysis.Max_Jitter[Brightness_TID]);
+	printf("\n\nOverall Jitter/Deviation of RGB: %.3fms", Analysis.Jitter_Analysis.Overall_Jitter[RGB_TID]);
+	printf("\nAverage Jitter of RGB: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[RGB_TID]);
+	printf("\nMaximum (Absolute) Jitter of RGB: %.3fms", Analysis.Jitter_Analysis.Max_Jitter[RGB_TID]);
 
 	printf("\n\nOverall Jitter/Deviation of Storage: %.3fms", Analysis.Jitter_Analysis.Overall_Jitter[Storage_TID]);
 	printf("\nAverage Jitter of Storage: %.3fms", Analysis.Jitter_Analysis.Avg_Jitter[Storage_TID]);

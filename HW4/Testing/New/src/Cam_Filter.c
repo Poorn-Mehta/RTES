@@ -1,16 +1,21 @@
 #include "main.h"
+#include "Aux_Func.h"
+#include "Cam_Func.h"
+#include "Cam_Filter.h"
+#include "Cam_RGB.h"
+#include "Cam_Monitor.h"
 
-extern uint8_t data_buffer[No_of_Buffers][Big_Buffer_Size];
-extern frame_p_buffer shared_struct;
-extern struct timespec prev_t;
+uint8_t data_buffer[No_of_Buffers][Big_Buffer_Size], Operating_Mode;
+frame_p_buffer shared_struct;
+struct timespec prev_t;
 
-static uint32_t frames, pix_cnt, diff_pix_cnt;
+static uint32_t frames, pix_cnt, diff_pix_cnt, Offset_ms;
 static uint8_t resp, buf_index;
 static int dumpfd, written, total;
 static store_struct file_out[Test_Frames];
 static char pgm_header[]="P5\n#9999999999 sec 9999999999 msec \n"HRES_STR" "VRES_STR"\n255\n";
 static char pgm_dumpname[]="img/ts/test00000000.pgm";
-static float diff_percent;
+static float diff_percent, Diff_Thr_Low, Diff_Thr_High;
 static struct timespec test_timestamps[Test_Frames];
 
 static void store_test_frame(uint32_t frame_no)
@@ -99,7 +104,7 @@ static uint8_t consecutive_cmp(uint32_t frame1, uint32_t frame2)
 	if((diff_percent >= Diff_Thr_Low) && (diff_percent <= Diff_Thr_High))
 	{
 		syslog(LOG_INFO, "<%.6fms>!!Cam_Filter!! ******Indicator Change Detected (%d and %d)******", Time_Stamp(Mode_ms), frame1, frame2);
-		prev_t.tv_sec = test_timestamps[frame2].tv_sec + 2;
+		prev_t.tv_sec = test_timestamps[frame2].tv_sec + Filter_Timestamp_Offset_s;
 		prev_t.tv_nsec = test_timestamps[frame2].tv_nsec;
 
 		if(prev_t.tv_nsec < (s_to_ns - (Offset_ms * ms_to_ns)))
@@ -198,6 +203,20 @@ void Cam_Filter(void)
 	frames = 0;
 	buf_index = 0;
 
+	if((Operating_Mode & Mode_FPS_Mask) == Mode_10_FPS_Val)
+	{
+		Offset_ms = Offset_10Hz_ms;
+		Diff_Thr_High = Diff_Thr_High_10Hz;
+		Diff_Thr_Low = Diff_Thr_Low_10Hz;
+	}
+
+	else
+	{
+		Offset_ms = Offset_1Hz_ms;
+		Diff_Thr_High = Diff_Thr_High_1Hz;
+		Diff_Thr_Low = Diff_Thr_Low_1Hz;
+	}
+
 	while(frames < Test_Frames)
 	{
 		do
@@ -216,6 +235,13 @@ void Cam_Filter(void)
 		}
 
 		frames += 1;
+	}
+
+	if(frames == Test_Frames)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Cam_Filter!! Couldn't Find The Targeted Difference", Time_Stamp(Mode_ms));
+		clock_gettime(CLOCK_REALTIME, &prev_t);
+		prev_t.tv_sec += Filter_Timestamp_Offset_s;
 	}
 
 }

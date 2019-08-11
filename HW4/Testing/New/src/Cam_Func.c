@@ -1,15 +1,150 @@
 // Cam_Func.c
 
 #include "main.h"
+#include "Aux_Func.h"
+#include "Cam_Func.h"
 
-extern char *dev_name;
-extern int fd;
+char *dev_name;
+int fd;
 struct v4l2_format fmt;
-extern frame_p_buffer *frame_p;
-extern uint32_t n_buffers;
-extern int force_format;
+frame_p_buffer *frame_p;
+uint32_t n_buffers;
+int force_format;
+uint32_t HRES, VRES;
+strct_analyze Analysis;
 
-extern uint32_t HRES, VRES;
+static float Warmup_Stamp_1, Warmup_Stamp_2;
+static int resp;
+
+// Declare set to use with FD_macros
+static fd_set fds;
+
+// Structure to store timing values
+static struct timeval tout;
+
+//mmap
+static uint8_t get_discard_frame(void)
+{
+	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#v4l2-buffer
+	struct v4l2_buffer buf;
+
+	// Set the entire structure to 0
+	CLEAR(buf);
+
+	// Set proper type
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+	// Indicate that the method being used is memory mapping
+	buf.memory = V4L2_MEMORY_MMAP;
+
+	// Dequeue a filled buffer from driver's outgoing queue
+	if (-1 == xioctl(fd, VIDIOC_DQBUF, &buf))
+	{
+		switch (errno)
+		{
+			case EAGAIN:
+			{
+				return 1;
+			}
+
+			case EIO:
+			/* Could ignore EIO, see spec. */
+
+			/* fall through */
+
+			default:
+			{
+				syslog(LOG_ERR, "<%.6fms>!!Cam_Func!! VIDIOC_DQBUF Error", Time_Stamp(Mode_ms));
+
+				errno_exit("VIDIOC_DQBUF");
+			
+				break;
+			}
+		}
+	}
+
+	assert(buf.index < n_buffers);
+
+	// Enqueue back the empty buffer to driver's incoming queue
+	if(-1 == xioctl(fd, VIDIOC_QBUF, &buf))
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Cam_Func!! VIDIOC_QBUF Error", Time_Stamp(Mode_ms));
+
+		errno_exit("VIDIOC_QBUF");
+	}
+
+	return 0;
+}
+
+
+uint8_t device_warmup(void)
+{
+	uint32_t tmp = 0;
+
+	Warmup_Stamp_1 = Time_Stamp(Mode_ms);
+
+	while(tmp < Warmup_Frames)
+	{
+
+		// Clear the set
+		FD_ZERO(&fds);
+
+		// Store file descriptor of camera in the set
+		FD_SET(fd, &fds);
+
+		// Set timeout of communication with Camera to 2 seconds
+		tout.tv_sec = Warmup_Select_Timeout_s;
+		tout.tv_usec = 0;
+
+		// http://man7.org/linux/man-pages/man2/select.2.html
+		// Select() blockingly monitors given file descriptors for their availibity for I/O operations
+		// First parameter: nfds should be set to the highest-numbered file descriptor in any of the three sets, plus 1
+		// Second parameter: file drscriptor set that should be monitored for read() availability
+		// Third parameter: file drscriptor set that should be monitored for write() availability
+		// Fourth parameter: file drscriptor set that should be monitored for exceptions
+		// Fifth parameter: to specify time out for select()
+		resp = select(fd + 1, &fds, NULL, NULL, &tout);
+
+		// Error handling
+		if(resp == -1)
+		{
+			// If a signal made select() to return, then skip rest of the loop code, and start again
+			if(EINTR == errno)
+			{
+				return 1;
+			}
+
+			syslog(LOG_ERR, "<%.6fms>!!Cam_Func!! Select() Error", Time_Stamp(Mode_ms));
+
+			errno_exit("select");
+		}
+
+		// 0 return means that no file descriptor made the select() to close
+		else if(resp == 0)
+		{
+
+			syslog(LOG_ERR, "<%.6fms>!!Cam_Func!! Select() Timedout", Time_Stamp(Mode_ms));
+
+			errno_exit("select timeout");
+		}
+
+		// If select() indicated that device is ready for reading from it, then grab a frame
+		else if(get_discard_frame() != 0)
+		{
+			Analysis.Max_FPS = 0;
+			return 1;
+		}
+
+		tmp += 1;
+
+	}
+
+	Warmup_Stamp_2 = Time_Stamp(Mode_ms);
+
+	Analysis.Max_FPS = (Warmup_Frames * (float)1000) / (Warmup_Stamp_2 - Warmup_Stamp_1);
+
+	return 0;
+}
 
 void errno_exit(const char *s)
 {
@@ -102,7 +237,7 @@ void uninit_device(void)
 }
 
 //mmap
-void init_userp(uint32_t buffer_size)
+void init_mmap(uint32_t buffer_size)
 {
 	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#v4l2-requestframe_p
 	// Required structure for initiating memory mapping or user pointer I/O
@@ -112,8 +247,8 @@ void init_userp(uint32_t buffer_size)
 	CLEAR(req);
 
 	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#v4l2-requestframe_p
-	// TODO: Comment out this field. According to the documentation, this is utterly useless.
-	req.count  = 2;
+	// Request no of buffers as defined in the header file
+	req.count  = MMAP_Buffers_Count;
 
 	// Set the proper type
 	req.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -136,7 +271,7 @@ void init_userp(uint32_t buffer_size)
 		}
 	}
 
-        if (req.count < 2)
+        if (req.count < MMAP_Buffers_Count)
         {
                 fprintf(stderr, "Insufficient buffer memory on %s\n", dev_name);
                 exit(EXIT_FAILURE);
@@ -354,7 +489,7 @@ void init_device(void)
 
 	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#v4l2-pix-format
 	// Looks like these parameters should be set automatically, however, as it says before, driver could be buggy
-	/* Buggy driver paranoia. */
+	// Buggy driver paranoia.
 	min = fmt.fmt.pix.width * 2;
 	if(fmt.fmt.pix.bytesperline < min)
 	{
@@ -370,7 +505,7 @@ void init_device(void)
 	// https://www.linuxtv.org/downloads/legacy/video4linux/API/V4L2_API/spec-single/v4l2.html#userp
 	// Call the proper function to setup user pointer background - that is specifically required
 	// Pass the size of the one frame as function parameter
-	init_userp(fmt.fmt.pix.sizeimage);
+	init_mmap(fmt.fmt.pix.sizeimage);
 }
 
 

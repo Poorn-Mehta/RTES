@@ -1,12 +1,15 @@
 #include "main.h"
+#include "Aux_Func.h"
+#include "Cam_RGB.h"
+#include "Scheduler.h"
 
-extern uint8_t Terminate_Flag, Operating_Mode;
-extern uint32_t HRES, VRES, Scheduler_Deadline, Deadline_ms, sch_index;
-extern uint8_t Complete_Var;	
-extern sem_t Sched_Sem, Brightness_Sem, Monitor_Sem;
-extern struct timespec prev_t;
-extern strct_analyze Analysis;
-extern float Monitor_Start_Stamp, Monitor_Stamp_1, Brightness_Start_Stamp, Brightness_Stamp_1;
+uint8_t Terminate_Flag, Operating_Mode;
+uint32_t HRES, VRES, Scheduler_Deadline, Deadline_ms, sch_index;
+uint8_t Complete_Var;	
+sem_t Sched_Sem, RGB_Sem, Monitor_Sem;
+struct timespec prev_t;
+strct_analyze Analysis;
+float Monitor_Start_Stamp, Monitor_Stamp_1, RGB_Start_Stamp, RGB_Stamp_1;
 
 static uint32_t frames = 0, sch_cnt;
 static int resp;
@@ -22,22 +25,32 @@ void *Scheduler_Func(void *para_t)
 	sch_index = 0;
 	startup = 0;
 
-	mq_unlink(storage_q_name);
-	mq_unlink(socket_q_name);
+	if(mq_unlink(storage_q_name) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Scheduler!! Couldn't unlink Storage Queue", Time_Stamp(Mode_ms));
+	}
 
-	const uint32_t sleep_time = (Deadline_ms * ms_to_ns) / 100;
+	if(mq_unlink(socket_q_name) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Scheduler!! Couldn't unlink Socket Queue", Time_Stamp(Mode_ms));
+	}
 
-	syslog (LOG_INFO, "<%.6fms>!!Scheduler!! Thread Setup Completed on Core: %d", Time_Stamp(Mode_ms), sched_getcpu());
+	const uint32_t sleep_time = (Deadline_ms * ms_to_ns) / Scheduler_Scaling_Factor;
+
+	syslog(LOG_INFO, "<%.6fms>!!Scheduler!! Thread Setup Completed on Core: %d", Time_Stamp(Mode_ms), sched_getcpu());
 
 	if((Operating_Mode & Mode_FPS_Mask) == Mode_10_FPS_Val)
 	{
-		clock_gettime(CLOCK_REALTIME, &prev_t);
+		if(clock_gettime(CLOCK_REALTIME, &prev_t) != 0)
+		{
+			syslog(LOG_ERR, "<%.6fms>!!Scheduler!! Couldn't get time for prev_t", Time_Stamp(Mode_ms));
+		}
 	}
-
-	Running_FPS_Stamp_1 = Time_Stamp(Mode_ms);
 
 	while(frames < No_of_Frames)
 	{
+
+		syslog(LOG_INFO, "<%.6fms>!!RMA!! Scheduler Launched (Iteration: %d)", Time_Stamp(Mode_ms), sch_index);
 
 		if(sch_index > 0)
 		{
@@ -65,26 +78,37 @@ void *Scheduler_Func(void *para_t)
 		{
 			Scheduler_Stamp_1 = Time_Stamp(Mode_ms);
 			Monitor_Start_Stamp = Scheduler_Stamp_1;
-			Brightness_Start_Stamp = Scheduler_Stamp_1;
-//			Deadline_Stamp_1 = Scheduler_Stamp_1;
+			RGB_Start_Stamp = Scheduler_Stamp_1;
+			Running_FPS_Stamp_1 = Scheduler_Stamp_1;
 		}
 
-		if((sch_cnt % 10) == 0)
-		{
-//			sem_post(&Monitor_Sem);
-		}
-
-		if((sch_cnt % 100) == 0)
+		if((sch_cnt % Scheduler_Scaling_Factor) == 0)
 		{
 			sch_cnt = 0;
-//			sem_post(&Monitor_Sem);
 			if(startup >= Useless_Frames)
 			{
-//				Deadline_Stamp_1 = Time_Stamp(Mode_ms);
 				Monitor_Stamp_1 = Time_Stamp(Mode_ms);
-				Brightness_Stamp_1 = Monitor_Stamp_1;
-				sem_post(&Monitor_Sem);
-				sem_post(&Brightness_Sem);
+				RGB_Stamp_1 = Monitor_Stamp_1;
+
+				if(sem_post(&Monitor_Sem) != 0)
+				{
+					syslog(LOG_ERR, "<%.6fms>!!Scheduler!! Couldn't post Monitor_Sem", Time_Stamp(Mode_ms));
+				}
+
+				else
+				{
+					syslog(LOG_INFO, "<%.6fms>!!RMA!! Cam_Monitor Semaphore Posted", Time_Stamp(Mode_ms));
+				}
+
+				if(sem_post(&RGB_Sem) != 0)
+				{
+					syslog(LOG_ERR, "<%.6fms>!!Scheduler!! Couldn't post RGB_Sem", Time_Stamp(Mode_ms));
+				}
+
+				else
+				{
+					syslog(LOG_INFO, "<%.6fms>!!RMA!! Cam_RGB Semaphore Posted", Time_Stamp(Mode_ms));
+				}
 			}
 			else
 			{
@@ -92,20 +116,10 @@ void *Scheduler_Func(void *para_t)
 			}
 		}		
 
-		if((Complete_Var & Brightness_Complete_Mask) == Brightness_Complete_Mask)
+		if((Complete_Var & RGB_Complete_Mask) == RGB_Complete_Mask)
 		{
-/*			Deadline_Stamp_2 = Time_Stamp(Mode_ms);
-
-			if((Deadline_Stamp_2 - Deadline_Stamp_1) > (float)Deadline_ms)
-			{
-				Analysis.Missed_Deadlines += 1;
-				syslog (LOG_INFO, "!!WEIRD!! Diff: %.3f", Deadline_Stamp_2 - Deadline_Stamp_1);
-			}*/
-
 			Complete_Var = 0;
 			frames += 1;
-
-//			Deadline_Stamp_1 = Time_Stamp(Mode_ms);
 		}
 
 		sch_cnt += 1;
@@ -126,11 +140,21 @@ void *Scheduler_Func(void *para_t)
 
 	Terminate_Flag = 1;
 
-	sem_post(&Brightness_Sem);
-	sem_post(&Monitor_Sem);
+	if(sem_post(&Monitor_Sem) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Scheduler!! Couldn't post Monitor_Sem", Time_Stamp(Mode_ms));
+	}
 
-	syslog (LOG_INFO, "<%.6fms>!!Scheduler!! Exiting...", Time_Stamp(Mode_ms));
+	if(sem_post(&RGB_Sem) != 0)
+	{
+		syslog(LOG_ERR, "<%.6fms>!!Scheduler!! Couldn't post RGB_Sem", Time_Stamp(Mode_ms));
+	}
 
-	usleep(100000);
+	syslog(LOG_INFO, "<%.6fms>!!Scheduler!! Exiting...", Time_Stamp(Mode_ms));
+
+	do{
+		usleep(Post_Exit_Wait_ms * ms_to_us);
+	} while(resp != 0);
+
 	pthread_exit(0);
 }
