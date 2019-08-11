@@ -19,12 +19,12 @@
 #define Pix_Min_Val		(uint8_t)0
 
 // Thresholds when the program is running this function at 1Hz
-#define Diff_Thr_Low_1Hz	(float)(0.1)
-#define Diff_Thr_High_1Hz	(float)(0.4)
+#define Diff_Thr_Low_1Hz	(float)(0.15)
+#define Diff_Thr_High_1Hz	(float)(0.6)
 
 // Thresholds when the program is running this function at 10Hz (Currently not supported)
-#define Diff_Thr_Low_10Hz	(float)(0.3)
-#define Diff_Thr_High_10Hz	(float)(0.5)
+#define Diff_Thr_Low_10Hz	(float)(0.45)
+#define Diff_Thr_High_10Hz	(float)(0.75)
 
 // Offset in milliseconds which is to be referred for further frame captures - 1Hz and 10Hz respectively
 #define Offset_1Hz_ms		(uint32_t)(500)
