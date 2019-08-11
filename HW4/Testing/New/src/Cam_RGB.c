@@ -71,12 +71,12 @@ static void dump_ppm(uint32_t size, uint32_t tag, uint32_t sock_tag, struct time
 
 	if((Operating_Mode & Mode_FPS_Mask) == Mode_10_FPS_Val)
 	{
-		strncpy(ppm_dumpname, "img/r2/RGB01Hz00000000.ppm", sizeof(ppm_dumpname));
+		strncpy(ppm_dumpname, "img/r2/RGB10Hz00000000.ppm", sizeof(ppm_dumpname));
 	}
 
 	else
 	{
-		strncpy(ppm_dumpname, "img/r2/RGB10Hz00000000.ppm", sizeof(ppm_dumpname));
+		strncpy(ppm_dumpname, "img/r2/RGB01Hz00000000.ppm", sizeof(ppm_dumpname));
 	}
 
 	strncpy(&file_out.header[0], ppm_header, sizeof(ppm_header));
