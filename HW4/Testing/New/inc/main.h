@@ -1,8 +1,8 @@
 /*
 *		File: main.h
-*		Purpose: The header file containing useful libraries, global defines, and function prototypes
+*		Purpose: The header file includes necessary libraries, defines globally used structures, and variables
 *		Owner: Poorn Mehta
-*		Last Modified: 7/5/2019
+*		Last Modified: 8/11/2019
 */
 
 #ifndef	__MAIN_H__
@@ -49,10 +49,12 @@
 // V4L2 Library
 #include <linux/videodev2.h>
 
+// POSIX Queue Defines
 #define storage_q_name 		"/store_q"
 #define socket_q_name 		"/socket_q"
 #define queue_size		(uint8_t)121
 
+// Input mode defines (using command line arguments)
 #define Mode_FPS_Pos		(uint8_t)0
 #define Mode_FPS_Mask		(uint8_t)(1 << Mode_FPS_Pos)
 #define Mode_1_FPS		"FPS_1"
@@ -60,30 +62,41 @@
 #define Mode_1_FPS_Val		(uint8_t)0
 #define Mode_10_FPS_Val		(uint8_t)1
 #define Mode_Socket_Pos		(uint8_t)1
-#define Mode_Socket_Mask		(uint8_t)(1 << Mode_Socket_Pos)
+#define Mode_Socket_Mask	(uint8_t)(1 << Mode_Socket_Pos)
 #define Mode_Socket_OFF		"OFF"
 #define Mode_Socket_ON		"ON"
-#define Mode_Socket_OFF_Val		(uint8_t)(0 << Mode_Socket_Pos)
-#define Mode_Socket_ON_Val		(uint8_t)(1 << Mode_Socket_Pos)
+#define Mode_Socket_OFF_Val	(uint8_t)(0 << Mode_Socket_Pos)
+#define Mode_Socket_ON_Val	(uint8_t)(1 << Mode_Socket_Pos)
 
-#define No_of_Buffers	    (uint32_t)100
-#define Big_Buffer_Size     (uint32_t)(640*480*3)
+// Circular Buffer Size
+#define No_of_Buffers	    	(uint32_t)100
+
+// Size of RGB frame (each pixel has 3 bytes - RGB)
+#define Big_Buffer_Size     	(uint32_t)(640*480*3)
 
 // To set passed strcuture to 0
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
+// Used for array size
 #define Filename_Len		(uint32_t)40
-#define Header_Len		(uint32_t)110
+#define Header_Len		(uint32_t)210
 
+// Frames that are to be masked after all initialization - mostly to flush the buffer of size 2 in mmap
 #define Useless_Frames		(uint32_t)2
 
-#define Frame_to_Capture	(uint32_t)101
+// The number of total frames that are to be captured
+#define Frame_to_Capture	(uint32_t)7201
 
+// The number of frames that are allowed to be stored on local flash (the latest frames will be there in case of Frames_to_Capture > Wrap_around_Frames)
 #define Wrap_around_Frames	(uint32_t)601
+
+// This is used by program - to be compared with internal frame counter
 #define No_of_Frames        (uint32_t)(Frame_to_Capture + Useless_Frames)
 
+// The number of frames taken initially, at maximum FPS, and simply discarded
 #define Warmup_Frames		(uint32_t)100
 
+// Used for analysis
 #define No_of_Threads		(uint8_t)5
 
 #define Scheduler_TID		(uint8_t)0
@@ -99,6 +112,8 @@
 
 #define Monitor_Scaling_Factor		(uint32_t)1
 #define Monitor_Loop_Count		(uint32_t)(Monitor_Scaling_Factor * No_of_Frames)
+
+// All custom structures used in the project
 
 typedef struct
 {
@@ -150,7 +165,7 @@ typedef struct
 } strct_analyze;
 
 
-// EXTERNS ********************
+// All shared variables
 
 extern struct timespec start_time;
 extern struct sched_param Attr_Sch;
