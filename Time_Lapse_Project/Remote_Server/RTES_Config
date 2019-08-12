@@ -1,0 +1,7 @@
+#! /bin/bash
+
+echo "Running Config Script"
+echo 1 > /sys/devices/system/cpu/cpu5/online
+
+sysctl kernel.sched_rt_runtime_us=-1
+echo "Config Completed"

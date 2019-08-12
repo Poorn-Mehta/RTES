@@ -1,0 +1,3 @@
+cd img/r2 && rm -f *.ppm && cd ../../
+make clean all
+./Remote_Server
