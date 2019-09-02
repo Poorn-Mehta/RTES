@@ -1,0 +1,150 @@
+This Program uses Syslog instead of printf
+
+Execute following to see the output:
+
+cd /var/log && grep HW4_Q5_2 syslog
+
+
+*** Started on Resolution: 960*720 ***
+FORCING FORMAT
+
+
+>>Grey Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 12359.125000us
+Max: 39989.750000us
+Avg: 35996.140625us
+
+Grey No Frames: 3, Grey Missed Deadlines: 0
+
+>>Brightness Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: -76457.000000us
+Max: 39992.625000us
+Avg: 31420.037109us
+
+Brightness No Frames: 6, Brightness Missed Deadlines: 1
+
+>>Contrast Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: -75924.250000us
+Max: 39992.750000us
+Avg: 25141.792969us
+
+Contrast No Frames: 8, Contrast Missed Deadlines: 2
+
+*** Ended on Resolution: 960*720 ***
+
+
+
+*** Started on Resolution: 800*600 ***
+FORCING FORMAT
+
+
+>>Grey Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 33395.000000us
+Max: 39988.500000us
+Avg: 36972.726562us
+
+Grey No Frames: 3, Grey Missed Deadlines: 0
+
+>>Brightness Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 25482.500000us
+Max: 39991.500000us
+Avg: 33709.726562us
+
+Brightness No Frames: 3, Brightness Missed Deadlines: 0
+
+>>Contrast Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 12568.750000us
+Max: 39979.500000us
+Avg: 28259.640625us
+
+Contrast No Frames: 4, Contrast Missed Deadlines: 0
+
+*** Ended on Resolution: 800*600 ***
+
+
+
+*** Started on Resolution: 640*480 ***
+FORCING FORMAT
+
+
+>>Grey Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 33395.000000us
+Max: 39989.000000us
+Avg: 37603.527344us
+
+Grey No Frames: 3, Grey Missed Deadlines: 0
+
+>>Brightness Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 25482.500000us
+Max: 39991.000000us
+Avg: 35104.175781us
+
+Brightness No Frames: 3, Brightness Missed Deadlines: 0
+
+>>Contrast Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 12568.750000us
+Max: 39983.000000us
+Avg: 30923.306641us
+
+Contrast No Frames: 5, Contrast Missed Deadlines: 0
+
+*** Ended on Resolution: 640*480 ***
+
+
+
+*** Started on Resolution: 320*240 ***
+FORCING FORMAT
+
+
+>>Grey Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 16513.000000us
+Max: 39990.000000us
+Avg: 38443.007812us
+
+Grey No Frames: 5, Grey Missed Deadlines: 0
+
+>>Brightness Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 17050.000000us
+Max: 39992.000000us
+Avg: 37238.734375us
+
+Brightness No Frames: 6, Brightness Missed Deadlines: 0
+
+>>Contrast Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 12568.750000us
+Max: 39989.000000us
+Avg: 35252.773438us
+
+Contrast No Frames: 2, Contrast Missed Deadlines: 0
+
+*** Ended on Resolution: 320*240 ***
+
+
+
+*** Started on Resolution: 160*120 ***
+FORCING FORMAT
+
+
+>>Grey Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 33395.000000us
+Max: 39990.000000us
+Avg: 38861.027344us
+
+Grey No Frames: 3, Grey Missed Deadlines: 0
+
+>>Brightness Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 19438.000000us
+Max: 39992.000000us
+Avg: 37795.242188us
+
+Brightness No Frames: 3, Brightness Missed Deadlines: 0
+
+>>Contrast Jitters (Remaining Execution Times relative to 40ms Deadline)<<
+Min: 12568.750000us
+Max: 39982.000000us
+Avg: 36315.078125us
+
+Contrast No Frames: 2, Contrast Missed Deadlines: 0
+
+*** Ended on Resolution: 160*120 ***
+

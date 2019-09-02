@@ -1,0 +1,36 @@
+This Program uses Syslog instead of printf
+
+Execute following to see the output:
+
+cd /var/log && grep HW4_Q5_2_Lo syslog
+
+
+*** Started on Resolution: 800*600 ***
+FORCING FORMAT
+
+
+>>Grey Jitters (Remaining Execution Times relative to 100ms Deadline)<<
+Min: 90544.218750us
+Max: 99995.468750us
+Avg: 95135.070312us
+
+Grey No Frames: 1, Grey Missed Deadlines: 0
+
+>>Brightness Jitters (Remaining Execution Times relative to 100ms Deadline)<<
+Min: -1637014.875000us
+Max: 99997.968750us
+Avg: 83598.820312us
+
+Brightness No Frames: 1, Brightness Missed Deadlines: 3
+
+>>Contrast Jitters (Remaining Execution Times relative to 100ms Deadline)<<
+Min: -1629056.500000us
+Max: 99997.968750us
+Avg: 77249.671875us
+
+Contrast No Frames: 1, Contrast Missed Deadlines: 3
+
+Average FPS is: 10.003
+
+*** Ended on Resolution: 800*600 ***
+

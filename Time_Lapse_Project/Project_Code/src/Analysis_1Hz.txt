@@ -1,0 +1,74 @@
+No IP entered - will connect to default: 192.168.50.104
+Socket is Turned ON
+Selected FPS: 1
+
+This Program uses Syslog instead of printf
+
+Execute following to see the output:
+
+cd /var/log && grep -a Testing syslog
+
+
+*** Started on Resolution: 640*480 ***
+FORCING FORMAT
+
+
+*** Ended on Resolution: 640*480 ***
+
+
+
+**********Detailed Analysis Below**********
+
+---GREP_INFO---
+
+grep -a Sch_Exec syslog
+grep -a Sch_Jitter syslog
+grep -a Mon_Exec syslog
+grep -a Mon_Jitter syslog
+grep -a Brgt_Exec syslog
+grep -a Brgt_Jitter syslog
+grep -a Store_Exec syslog
+grep -a Store_Jitter syslog
+grep -a Sock_Exec syslog
+grep -a Sock_Jitter syslog
+
+Max FPS: 29.660
+Program Ran at 0.999 FPS (Target FPS: 1.000)
+
+Total Missed Deadline(s): 0 (Total Frames: 3603)
+
+Average Execution Time of Scheduler: 10.000ms (Deadline: 10.000ms)
+Worst Case Execution Time of Scheduler: 10.750ms
+
+Average Execution Time of Monitor: 0.017ms (Deadline: 1000.000ms)
+Worst Case Execution Time of Monitor: 0.125ms
+
+Average Execution Time of Brightness: 18.060ms (Deadline: 1000.000ms)
+Worst Case Execution Time of Brightness: 18.867ms
+
+Average Execution Time of Storage: 8.245ms (Goal: 1000.000ms)
+Worst Case Execution Time of Storage: 512.750ms
+
+Average Execution Time of Socket: 80.968ms (Goal: 1000.000ms)
+Worst Case Execution Time of Socket: 359.562ms
+
+Overall Jitter/Deviation of Scheduler: 2468.500ms
+Average Jitter of Scheduler: -0.000ms
+Maximum (Absolute) Jitter of Scheduler: 10.000ms
+
+Overall Jitter/Deviation of Monitor: 2010.000ms
+Average Jitter of Monitor: -999.983ms
+Maximum (Absolute) Jitter of Monitor: 1000.000ms
+
+Overall Jitter/Deviation of Brightness: 2010.250ms
+Average Jitter of Brightness: -981.940ms
+Maximum (Absolute) Jitter of Brightness: 982.000ms
+
+Overall Jitter/Deviation of Storage: -991.500ms
+Average Jitter of Storage: -991.755ms
+Maximum (Absolute) Jitter of Storage: 998.771ms
+
+Overall Jitter/Deviation of Socket: -920.500ms
+Average Jitter of Socket: -919.032ms
+Maximum (Absolute) Jitter of Socket: 920.500ms
+

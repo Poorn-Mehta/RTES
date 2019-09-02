@@ -1,3 +1,0 @@
-cd img/r2 && rm -f *.ppm && cd ../../
-make clean all
-./Project_1

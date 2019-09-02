@@ -1,0 +1,101 @@
+This Program uses Syslog instead of printf
+
+Execute following to see the output:
+
+cd /var/log && grep HW4_Q5_1 syslog
+
+*** Started on Resolution: 960*720 ***FORCING FORMAT
+
+Grey_Avg_fps: 14.513
+Grey_Avg_ET: 6627.244141us
+Grey_WCET: 7307.500000us
+FORCING FORMAT
+
+Bright_Avg_fps: 14.513
+Bright_Avg_ET: 14632.150391us
+Bright_WCET: 15625.500000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 14.460
+Contrast_Avg_ET: 27551.580078us
+Contrast_WCET: 28484.000000us
+
+
+*** Ended on Resolution: 960*720 ***
+
+*** Started on Resolution: 800*600 ***FORCING FORMAT
+
+Grey_Avg_fps: 14.764
+Grey_Avg_ET: 4692.220215us
+Grey_WCET: 4984.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 14.653
+Bright_Avg_ET: 10186.280273us
+Bright_WCET: 10720.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 14.540
+Contrast_Avg_ET: 19199.880859us
+Contrast_WCET: 19682.000000us
+
+
+*** Ended on Resolution: 800*600 ***
+
+*** Started on Resolution: 640*480 ***FORCING FORMAT
+
+Grey_Avg_fps: 15.178
+Grey_Avg_ET: 3077.639893us
+Grey_WCET: 3520.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 14.757
+Bright_Avg_ET: 6650.640137us
+Bright_WCET: 7084.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 15.017
+Contrast_Avg_ET: 13167.759766us
+Contrast_WCET: 33602.000000us
+
+
+*** Ended on Resolution: 640*480 ***
+
+*** Started on Resolution: 320*240 ***FORCING FORMAT
+
+Grey_Avg_fps: 14.778
+Grey_Avg_ET: 980.479980us
+Grey_WCET: 5760.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 14.781
+Bright_Avg_ET: 1862.479980us
+Bright_WCET: 8424.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 14.773
+Contrast_Avg_ET: 3417.520020us
+Contrast_WCET: 3676.000000us
+
+
+*** Ended on Resolution: 320*240 ***
+
+*** Started on Resolution: 160*120 ***FORCING FORMAT
+
+Grey_Avg_fps: 14.647
+Grey_Avg_ET: 280.480011us
+Grey_WCET: 364.000000us
+FORCING FORMAT
+
+Bright_Avg_fps: 14.625
+Bright_Avg_ET: 496.320007us
+Bright_WCET: 556.000000us
+FORCING FORMAT
+
+Contrast_Avg_fps: 14.595
+Contrast_Avg_ET: 946.799988us
+Contrast_WCET: 1024.000000us
+
+
+*** Ended on Resolution: 160*120 ***
+

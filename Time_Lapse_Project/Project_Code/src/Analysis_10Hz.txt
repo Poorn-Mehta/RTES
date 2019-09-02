@@ -1,0 +1,74 @@
+No IP entered - will connect to default: 192.168.50.104
+Socket is Turned ON
+Selected FPS: 10
+
+This Program uses Syslog instead of printf
+
+Execute following to see the output:
+
+cd /var/log && grep -a Testing syslog
+
+
+*** Started on Resolution: 640*480 ***
+FORCING FORMAT
+
+
+*** Ended on Resolution: 640*480 ***
+
+
+
+**********Detailed Analysis Below**********
+
+---GREP_INFO---
+
+grep -a Sch_Exec syslog
+grep -a Sch_Jitter syslog
+grep -a Mon_Exec syslog
+grep -a Mon_Jitter syslog
+grep -a Brgt_Exec syslog
+grep -a Brgt_Jitter syslog
+grep -a Store_Exec syslog
+grep -a Store_Jitter syslog
+grep -a Sock_Exec syslog
+grep -a Sock_Jitter syslog
+
+Max FPS: 29.659
+Program Ran at 10.000 FPS (Target FPS: 10.000)
+
+Total Missed Deadline(s): 0 (Total Frames: 6003)
+
+Average Execution Time of Scheduler: 1.000ms (Deadline: 1.000ms)
+Worst Case Execution Time of Scheduler: 1.602ms
+
+Average Execution Time of Monitor: 0.042ms (Deadline: 100.000ms)
+Worst Case Execution Time of Monitor: 0.062ms
+
+Average Execution Time of Brightness: 18.292ms (Deadline: 100.000ms)
+Worst Case Execution Time of Brightness: 19.542ms
+
+Average Execution Time of Storage: 22.035ms (Goal: 100.000ms)
+Worst Case Execution Time of Storage: 527.250ms
+
+Average Execution Time of Socket: 80.166ms (Goal: 100.000ms)
+Worst Case Execution Time of Socket: 321.188ms
+
+Overall Jitter/Deviation of Scheduler: 0.000ms
+Average Jitter of Scheduler: -0.000ms
+Maximum (Absolute) Jitter of Scheduler: 1.000ms
+
+Overall Jitter/Deviation of Monitor: 218.125ms
+Average Jitter of Monitor: -99.958ms
+Maximum (Absolute) Jitter of Monitor: 100.000ms
+
+Overall Jitter/Deviation of Brightness: 218.250ms
+Average Jitter of Brightness: -81.708ms
+Maximum (Absolute) Jitter of Brightness: 81.797ms
+
+Overall Jitter/Deviation of Storage: -94.750ms
+Average Jitter of Storage: -77.965ms
+Maximum (Absolute) Jitter of Storage: 427.250ms
+
+Overall Jitter/Deviation of Socket: -21.375ms
+Average Jitter of Socket: -19.834ms
+Maximum (Absolute) Jitter of Socket: 221.188ms
+
